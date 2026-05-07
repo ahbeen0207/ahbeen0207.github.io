@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>자산관리 사이트 - 대시보드</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #000; color: white; font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* 사이드바 */
+        .sidebar { width: 220px; background-color: #121212; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 30px 15px; }
+        .sidebar h1 { color: #fff; font-size: 20px; text-align: center; margin-bottom: 50px; }
+        .nav-item { padding: 15px; margin-bottom: 10px; border-radius: 8px; color: #fff; font-size: 15px; cursor: pointer; text-align: center; transition: 0.3s; }
+        .nav-item.active { background-color: #3b82f6; }
+        .nav-item:hover:not(.active) { background-color: #2d2d2d; }
+        .logout-btn { margin-top: auto; color: #64748b; font-size: 14px; cursor: pointer; text-align: center; padding: 10px; }
+
+        /* 메인 콘텐츠 */
+        .main-content { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        /* 상단 6개 카드 */
+        .card-container { display: flex; gap: 10px; margin-bottom: 25px; }
+        .card { flex: 1; background-color: #1e1e1e; border-radius: 10px; padding: 15px; min-width: 150px; }
+        .label-box { display: inline-block; padding: 3px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 12px; }
+        .value { font-size: 18px; font-weight: bold; text-align: right; }
+
+        /* 카드 색상 */
+        .red { background-color: #ef4444; } .pink { background-color: #ec4899; }
+        .purple { background-color: #a855f7; } .blue { background-color: #3b82f6; }
+        .yellow { background-color: #eab308; color: #000; } .gray { background-color: #4b5563; }
+
+        /* 차트 영역 */
+        .chart-box { background-color: #121212; border-radius: 12px; flex-grow: 1; padding: 20px; border: 1px solid #222; }
+        .chart-placeholder { color: #444; text-align: center; margin-top: 100px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h1>자산관리<br>사이트</h1>
+        <div class="nav-item active">대시보드</div>
+        <div class="nav-item">주식거래내역</div>
+        <div class="nav-item">예금거래내역</div>
+        <div class="logout-btn" onclick="signOut()">로그아웃</div>
+    </div>
+
+    <div class="main-content">
+        <div class="card-container">
+            <div class="card"><div class="label-box red">총자산</div><div class="value">619,409,885</div></div>
+            <div class="card"><div class="label-box pink">주식합계</div><div class="value">217,138,950</div></div>
+            <div class="card"><div class="label-box purple">채권합계</div><div class="value">21,991,785</div></div>
+            <div class="card"><div class="label-box blue">현금합계</div><div class="value">206,105,990</div></div>
+            <div class="card"><div class="label-box yellow">금합계</div><div class="value">56,323,160</div></div>
+            <div class="card"><div class="label-box gray">예금합계</div><div class="value">117,850,000</div></div>
+        </div>
+
+        <div class="chart-box">
+            <div class="chart-placeholder">차트 데이터 로딩 중...</div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase 설정
+        const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
+        const SUPABASE_KEY = '본인의_Key';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // [보안] 로그인 세션 체크
+        window.onload = async () => {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (!session) {
+                alert("비정상적인 접근입니다. 로그인 페이지로 이동합니다.");
+                location.href = 'index.html';
+            }
+        };
+
+        async function signOut() {
+            await _supabase.auth.signOut();
+            location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
