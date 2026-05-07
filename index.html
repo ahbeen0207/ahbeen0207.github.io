@@ -1,12 +1,92 @@
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head>
-        <meta charset="UTF-8">
-        <title>나의 첫 페이지</title>
-    </head>
-    <body>
-        <h1>안녕하세요, GitHub Pages입니다!</h1>
-        <p>이제 이곳에 Supabase를 연동할 예정입니다.</p>
-    </body>
-    </html>
-    
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>자산관리 포털 - 로그인</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background-color: #121212; /* 기존 사이트와 유사한 다크 배경 */
+            color: white;
+            font-family: 'Pretendard', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background-color: #1e1e1e;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 350px;
+            text-align: center;
+        }
+        h2 { color: #10b981; margin-bottom: 30px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background-color: #2a2a2a;
+            color: white;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: #10b981; /* 포인트 컬러 */
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #059669; }
+        #message { margin-top: 15px; font-size: 14px; color: #ef4444; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>자산관리 포털</h2>
+    <input type="email" id="email" placeholder="이메일 주소">
+    <input type="password" id="password" placeholder="비밀번호">
+    <button onclick="signIn()">로그인</button>
+    <div id="message"></div>
+</div>
+
+<script>
+    // Supabase 설정 (복사한 정보를 여기에 붙여넣으세요)
+    const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
+	const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function signIn() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const messageDiv = document.getElementById('message');
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            messageDiv.innerText = "로그인 실패: " + error.message;
+        } else {
+            messageDiv.style.color = "#10b981";
+            messageDiv.innerText = "로그인 성공! 이동 중...";
+            // 로그인 성공 시 대시보드 페이지(dashboard.html)로 이동
+            setTimeout(() => {
+                location.href = 'dashboard.html';
+            }, 1000);
+        }
+    }
+</script>
+
+</body>
+</html>
