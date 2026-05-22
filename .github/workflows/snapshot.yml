@@ -2,9 +2,9 @@ name: Monthly Asset Snapshot Cron Job
 
 on:
   schedule:
-    # 한국시간 매월 1일 새벽 1시 자동 실행 (UTC 기준 전날 16시)
-    - cron: '0 16 'L' * *'
-  workflow_dispatch: # 👈 이 구문 덕분에 깃허브 웹 화면에서 수동 테스트 실행이 가능해집니다.
+    # 💡 한국 시간(UTC+9) 매월 1일 오전 10시 정각에 자동으로 실행되도록 변경 (에러 방지 표준 문법)
+    - cron: '0 1 * 1-12 *'
+  workflow_dispatch: # 웹 화면에서 수동 실행 버튼을 활성화해 주는 필수 옵션
 
 jobs:
   run-snapshot-job:
