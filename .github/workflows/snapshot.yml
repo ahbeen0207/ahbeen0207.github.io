@@ -16,7 +16,7 @@ jobs:
       - name: 노드JS 최신 환경 세팅
         uses: actions/setup-node@v3
         with:
-          node-version: '20' # 💡 fetch가 기본 내장된 최신 20버전으로 상향하여 에러 방지
+          node-version: '22' # 기존 20에서 22로 버전을 변경합니다.
 
       - name: 필요한 라이브러리 가상서버에 다운로드
         run: |
