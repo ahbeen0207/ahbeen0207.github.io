@@ -1,6 +1,5 @@
 // cron_snapshot.js
 const { createClient } = require('@supabase/supabase-js');
-const fetch = require('node-fetch'); // 💡 Node.js 환경에서 fetch 에러를 완벽히 방지하기 위해 강제 주입합니다.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; 
@@ -13,6 +12,10 @@ async function runSnapshot() {
     console.log("🚀 월별 자산 스냅샷 배치 정산 시작...");
     try {
         console.log("1. 구글 실시간 시세 조회 중...");
+        
+        // 💡 fetch 버전 오류를 차단하기 위해 동적 임포트(Dynamic Import) 표준 문법으로 안전하게 데이터를 수집합니다.
+        const { default: fetch } = await import('node-fetch');
+        
         const gasRes = await fetch(googleGasUrl);
         const gasJson = await gasRes.json();
         const cachedGasData = (gasJson && gasJson.status === "success") ? gasJson.stockPrices : {};
