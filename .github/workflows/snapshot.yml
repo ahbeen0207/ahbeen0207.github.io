@@ -1,0 +1,31 @@
+name: Monthly Asset Snapshot Cron Job
+
+on:
+  schedule:
+    # 한국시간 매월 1일 새벽 1시 자동 실행 (UTC 기준 전날 16시)
+    - cron: '0 16 'L' * *'
+  workflow_dispatch: # 👈 이 구문 덕분에 깃허브 웹 화면에서 수동 테스트 실행이 가능해집니다.
+
+jobs:
+  run-snapshot-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스코드 체크아웃
+        uses: actions/checkout@v3
+
+      - name: 노드JS 환경 세팅
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 필요한 라이브러리 가상서버에 다운로드
+        run: |
+          npm init -y
+          npm install @supabase/supabase-js node-fetch
+
+      - name: 스크립트 실행 (깃허브 비밀 키를 소스코드 내부 env로 전달)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MY_USER_ID: ${{ secrets.MY_USER_ID }}
+        run: node cron_snapshot.js
