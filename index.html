@@ -2,121 +2,194 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>자산관리 포털 - 로그인</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Asset Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+KR:wght@400;700&display=swap');
+        
         body {
-            background-color: #121212;
-            color: white;
-            font-family: 'Pretendard', sans-serif;
+            margin: 0;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', 'Noto Sans KR', 'Pretendard', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
         }
-        .login-card {
-            background-color: #1e1e1e;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 350px;
-            text-align: center;
-        }
-        h2 { color: #10b981; margin-bottom: 30px; }
-        input[type="email"], input[type="password"] {
+
+        .login-box {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            border: 1px solid #333;
-            background-color: #2a2a2a;
-            color: white;
-            box-sizing: border-box;
+            max-width: 400px;
+            padding: 40px;
+            background: #0a0a0a;
+            border-radius: 24px;
+            border: 1px solid #1a1a1a;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .remember-id {
+
+        .logo { font-size: 48px; color: #3b82f6; margin-bottom: 30px; }
+        .input-group { margin-bottom: 16px; text-align: left; }
+        .input-group input {
+            width: 100%;
+            padding: 16px;
+            background: #121212;
+            border: 1px solid #222;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus { border-color: #3b82f6; }
+        
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 8px;
+            transition: background 0.3s;
+        }
+        .login-btn:hover { background: #2563eb; }
+        .login-btn:disabled {
+            background: #1d4ed8;
+            color: #93c5fd;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .options {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #94a3b8;
-            cursor: pointer;
+            font-size: 13px;
+            color: #888; /* 가독성을 위해 회색 톤을 약간 밝게 조정 */
+            margin-top: 16px;
+            user-select: none;
         }
-        .remember-id input { margin-right: 8px; cursor: pointer; }
-        button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            background-color: #10b981;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
+        .options input { margin-right: 8px; cursor: pointer; }
+        .options label { cursor: pointer; }
+        
+        #message {
+            margin-top: 15px;
+            font-size: 13px;
+            min-height: 20px;
+            color: #ef4444;
+            word-break: keep-all;
         }
-        button:hover { background-color: #059669; }
-        #message { margin-top: 15px; font-size: 14px; color: #ef4444; min-height: 20px; }
     </style>
 </head>
 <body>
 
-<div class="login-card">
-    <h2>자산관리 포털</h2>
-    <input type="email" id="email" placeholder="이메일 주소">
-    <input type="password" id="password" placeholder="비밀번호">
-    
-    <label class="remember-id">
-        <input type="checkbox" id="saveId"> 아이디 저장
-    </label>
+    <div class="login-box">
+        <div class="logo">💙</div>
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="email" id="email" placeholder="이메일 주소" autocomplete="username" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" required>
+            </div>
+            <div class="options">
+                <input type="checkbox" id="saveId">
+                <label for="saveId">아이디 저장 (Remember me)</label>
+            </div>
+            <button type="submit" id="loginBtn" class="login-btn">Sign in</button>
+        </form>
+        <div id="message"></div>
+    </div>
 
-    <button onclick="signIn()">로그인</button>
-    <div id="message"></div>
-</div>
+    <script>
+        // Supabase 설정 (자산관리 프로젝트용)
+        const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l'; 
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<script>
-    const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l'; // 반드시 본인의 키로 교체하세요
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // 페이지 로드 시 저장된 아이디 불러오기
-    window.onload = function() {
-        const savedEmail = localStorage.getItem('savedEmail');
-        if (savedEmail) {
-            document.getElementById('email').value = savedEmail;
-            document.getElementById('saveId').checked = true;
-        }
-    };
-
-    async function signIn() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const saveIdChecked = document.getElementById('saveId').checked;
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const saveIdCheckbox = document.getElementById('saveId');
+        const loginBtn = document.getElementById('loginBtn');
         const messageDiv = document.getElementById('message');
 
-        // 아이디 저장 로직
-        if (saveIdChecked) {
-            localStorage.setItem('savedEmail', email);
-        } else {
-            localStorage.removeItem('savedEmail');
-        }
+        // 페이지 로드시 아이디 저장 체크 여부 확인
+        window.onload = function() {
+            const savedEmail = localStorage.getItem('savedEmail');
+            if (savedEmail) {
+                emailInput.value = savedEmail;
+                saveIdCheckbox.checked = true;
+                passwordInput.focus(); // 아이디가 있으면 비밀번호 창으로 바로 포커스
+            } else {
+                emailInput.focus();
+            }
+        };
 
-        const { data, error } = await _supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            // 상태 초기화 및 버튼 비활성화 (중복 클릭 방지)
+            messageDiv.innerText = "";
+            loginBtn.disabled = true;
+            loginBtn.innerText = "Signing in...";
+
+            // 아이디 저장 로직 처리
+            if (saveIdCheckbox.checked) {
+                localStorage.setItem('savedEmail', email);
+            } else {
+                localStorage.removeItem('savedEmail');
+            }
+
+            try {
+                // Supabase 로그인 시도
+                const { data, error } = await _supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    messageDiv.style.color = "#ef4444";
+                    messageDiv.innerText = "로그인 실패: " + error.message;
+                    passwordInput.value = ""; // 실패 시 비밀번호 창 초기화
+                    passwordInput.focus();
+                    
+                    // 버튼 재활성화
+                    loginBtn.disabled = false;
+                    loginBtn.innerText = "Sign in";
+                } else {
+                    messageDiv.style.color = "#10b981";
+                    messageDiv.innerText = "성공! 이동 중입니다...";
+
+                    // --- 리다이렉트 분기 로직 ---
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectTo = urlParams.get('redirect');
+
+                    setTimeout(() => {
+                        if (redirectTo) {
+                            window.location.href = decodeURIComponent(redirectTo);
+                        } else {
+                            window.location.href = 'select_page.html';
+                        }
+                    }, 800);
+                }
+            } catch (err) {
+                // 네트워크 에러 등 예외 처리
+                messageDiv.style.color = "#ef4444";
+                messageDiv.innerText = "오류가 발생했습니다. 네트워크를 확인해주세요.";
+                loginBtn.disabled = false;
+                loginBtn.innerText = "Sign in";
+            }
         });
-
-        if (error) {
-            messageDiv.innerText = "로그인 실패: " + error.message;
-        } else {
-            messageDiv.style.color = "#10b981";
-            messageDiv.innerText = "로그인 성공! 이동 중...";
-            setTimeout(() => {
-                location.href = 'dashboard.html';
-            }, 1000);
-        }
-    }
-</script>
-
+    </script>
 </body>
 </html>
