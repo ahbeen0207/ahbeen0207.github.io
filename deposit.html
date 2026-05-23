@@ -84,6 +84,7 @@
         .modal-content { position: absolute; background: var(--vv-bg-card); width: 950px; border-radius: 12px; border: 1px solid var(--vv-border); left: 50%; transform: translateX(-50%); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .modal-header { padding: 12px 16px; background: #333; border-bottom: 1px solid var(--vv-border); display: flex; justify-content: space-between; align-items: center; cursor: move; border-radius: 12px 12px 0 0; }
         .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; }
+        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; }
         .form-group { display: flex; flex-direction: column; gap: 4px; }
         .form-group label { font-size: 12px; color: var(--vv-text-muted); }
         .form-group input, .form-group select { background: var(--vv-bg-main); border: 1px solid var(--vv-border); color: white; padding: 8px; border-radius: 4px; font-size: 13px; }
@@ -304,7 +305,6 @@
             }
         }
 
-        // [종목별현황] 전용 조회 함수 (상태가 항상 '유지'인 것만 요청)
         async function fetchStatusHistory(page = 1) {
             if(!_supabase) return;
             currentStatusPage = page;
@@ -317,8 +317,6 @@
             const fName = document.getElementById('filter-status-name').value;
 
             let query = _supabase.from('deposit_management').select('*', { count: 'exact' });
-
-            // 조건 강제 부여: 상태는 무조건 '유지'
             query = query.eq('status', '유지');
 
             if (fMonth && fMonth.trim() !== "") {
@@ -363,7 +361,7 @@
 						<td>${item.account_category}</td>
 						<td>${item.asset_category}</td>
 						<td style="text-align: left; padding-left: 15px;">
-							<span style="cursor: pointer; text-decoration: underline;" onclick="openEditModal('${itemStr}')">
+							<span style="cursor: pointer; text-decoration: underline;" data-item="${itemStr}" onclick="openEditModal(this)">
 								${item.product_name}
 							</span>
 						</td>
@@ -379,7 +377,6 @@
             renderStatusPagination(count);
         }
 
-        // [거래내역] 전체 목록 조회 함수
         async function fetchTradeHistory(page = 1) {
             if(!_supabase) return;
             currentPage = page;
@@ -437,7 +434,7 @@
 						<td>${item.account_category}</td>
 						<td>${item.asset_category}</td>
 						<td style="text-align: left; padding-left: 15px;">
-							<span style="cursor: pointer; text-decoration: underline;" onclick="openEditModal('${itemStr}')">
+							<span style="cursor: pointer; text-decoration: underline;" data-item="${itemStr}" onclick="openEditModal(this)">
 								${item.product_name}
 							</span>
 						</td>
@@ -453,7 +450,6 @@
             renderPagination(count);
         }
 
-        // [종목별현황] 페이징 컴포넌트 렌더링
         function renderStatusPagination(totalCount) {
             const pagination = document.getElementById('pagination-status');
             const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
@@ -482,7 +478,6 @@
             pagination.innerHTML = html;
         }
 
-        // [거래내역] 페이징 컴포넌트 렌더링
         function renderPagination(totalCount) {
             const pagination = document.getElementById('pagination');
             const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
@@ -511,7 +506,6 @@
             pagination.innerHTML = html;
         }
 
-        // 서브 탭 이동 제어 핸들러
         function switchView(view) {
             document.getElementById('btn-status').classList.toggle('active', view === 'status');
             document.getElementById('btn-trade').classList.toggle('active', view === 'trade');
@@ -523,7 +517,7 @@
             } else {
                 document.getElementById('main-status').style.display = 'flex';
                 document.getElementById('main-trade').style.display = 'none';
-                fetchStatusHistory(1); // 종목별현황(유지만출력) 전용 쿼리 구동
+                fetchStatusHistory(1); 
             }
         }
 
@@ -547,7 +541,8 @@
             }
         }
 
-        function openEditModal(itemStr) {
+        function openEditModal(element) {
+            const itemStr = element.getAttribute('data-item');
             const item = JSON.parse(decodeURIComponent(itemStr));
             openRegisterModal();
             
@@ -578,8 +573,6 @@
             const amt = parseFloat(document.getElementById('modal_amount').value) || 0;
             const interest = parseFloat(document.getElementById('modal_interest').value) || 0;
             const tax = parseFloat(document.getElementById('modal_tax').value) || 0;
-
-            // 총금액 = 원금 + 이자 - 세금
             document.getElementById('modal_total').value = (amt + interest - tax).toFixed(2);
         }
 
@@ -591,7 +584,6 @@
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             
-            // 빈 만기일 처리
             if(!data.maturity_date) data.maturity_date = null;
 			
 			const tradeId = document.getElementById('modal_trade_id').value;
@@ -617,7 +609,6 @@
                 
                 closeModal();
                 
-                // 현재 활성화된 화면의 데이터를 리프레시
                 if (document.getElementById('main-trade').style.display !== 'none') {
                     fetchTradeHistory(currentPage);
                 } else {
@@ -676,8 +667,6 @@
 
         window.onload = () => {
             setPlaceholderDate();
-            
-            // 기존 거래내역이 아닌 종목별현황(유지 데이터 전용)을 기본 페이지 뷰로 로드하도록 스위칭 변경
             switchView('status'); 
             
             const modal = document.getElementById('draggable-modal');
