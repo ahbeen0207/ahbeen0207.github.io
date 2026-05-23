@@ -2,84 +2,664 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>자산관리 사이트 - 대시보드</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식관리 시스템 - 대시보드</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { background-color: #000; color: white; font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root {
+            --vv-bg-main: #121212;
+            --vv-bg-card: #2c2c2c;
+            --vv-border: #3d3d3d;
+            --vv-text-main: rgba(255, 255, 255, 0.95);
+            --vv-text-muted: rgba(255, 255, 255, 0.65);
+            --vv-text-mint: #03dac6;
+            --point-blue: #3b82f6;
+            --point-green: #2ecc71;
+            --point-purple: #a855f7;
+            
+            /* 대시보드 전용 자산별 테마 색상 */
+            --color-total: #ff0000;
+            --color-stock: #ff00bf;
+            --color-bond: #00b050;
+            --color-cash: #7030a0;
+            --color-gold: #0070c0;
+            
+            --sidebar-width: 160px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--vv-bg-main); color: var(--vv-text-main); font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; height: 100vh; padding: 20px 10%; overflow: hidden; }
+
+        /* 상단 레이아웃 */
+        .top-section { display: flex; gap: 12px; height: 60px; margin-bottom: 12px; flex-shrink: 0; }
+        .logo-box { width: var(--sidebar-width); height: 60px; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background-color: var(--vv-bg-card); padding: 2px; overflow: hidden; }
+        .logo-box img { height: 54px; width: auto; object-fit: cover; border-radius: 6px; }
+        .header-menu { flex: 1; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; background-color: var(--vv-bg-card); overflow: hidden; }
+        .header-menu a { flex: 1; display: flex; justify-content: center; align-items: center; text-decoration: none; color: var(--vv-text-main); font-weight: 600; border-right: 1px solid var(--vv-border); transition: 0.2s; }
+        .header-menu a.active { background-color: var(--point-blue); color: white; }
+
+        /* 메인 레이아웃 wrapper */
+        .wrapper { display: flex; flex: 1; gap: 12px; overflow: hidden; }
         
-        /* 사이드바 */
-        .sidebar { width: 220px; background-color: #121212; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 30px 15px; }
-        .sidebar h1 { color: #fff; font-size: 20px; text-align: center; margin-bottom: 50px; }
-        .nav-item { padding: 15px; margin-bottom: 10px; border-radius: 8px; color: #fff; font-size: 15px; cursor: pointer; text-align: center; transition: 0.3s; }
-        .nav-item.active { background-color: #3b82f6; }
-        .nav-item:hover:not(.active) { background-color: #2d2d2d; }
-        .logout-btn { margin-top: auto; color: #64748b; font-size: 14px; cursor: pointer; text-align: center; padding: 10px; }
-
-        /* 메인 콘텐츠 */
-        .main-content { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; }
+        /* 좌측 네비게이션 */
+        nav { 
+            width: var(--sidebar-width); 
+            border: 1px solid var(--vv-border); 
+            border-radius: 12px; 
+            padding: 15px 10px 20px 10px; 
+            display: flex; 
+            flex-direction: column; 
+            background-color: var(--vv-bg-card); 
+        }
+        nav .nav-btn + .nav-btn { margin-top: 20px; }
+        .nav-btn { width: 100%; padding: 12px 0; background: var(--vv-bg-main); border: 1px solid var(--vv-border); color: var(--vv-text-main); border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .nav-btn.active { background-color: var(--point-green); border-color: var(--point-green); color: white; }
         
-        /* 상단 6개 카드 */
-        .card-container { display: flex; gap: 10px; margin-bottom: 25px; }
-        .card { flex: 1; background-color: #1e1e1e; border-radius: 10px; padding: 15px; min-width: 150px; }
-        .label-box { display: inline-block; padding: 3px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 12px; }
-        .value { font-size: 18px; font-weight: bold; text-align: right; }
+        .sidebar-logo-box {
+            width: 70%;                  
+            height: 70px;                
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 25px auto;    
+            overflow: hidden;
+            border-radius: 8px;
+            border: 1px solid var(--vv-border);
+            background-color: var(--vv-bg-main);
+        }
+        .sidebar-logo-box img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 카드 색상 */
-        .red { background-color: #ef4444; } .pink { background-color: #ec4899; }
-        .purple { background-color: #a855f7; } .blue { background-color: #3b82f6; }
-        .yellow { background-color: #eab308; color: #000; } .gray { background-color: #4b5563; }
+        /* 메인 콘텐츠 영역 */
+        main { flex: 1; border: 1px solid var(--vv-border); border-radius: 12px; background-color: var(--vv-bg-card); padding: 24px; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* 대시보드 상단 요약 카드 그리드 */
+        .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; flex-shrink: 0; }
+        .summary-card { background: var(--vv-bg-main); border: 1px solid var(--vv-border); border-radius: 12px; padding: 12px 14px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        
+        /* 자산별 상단 메뉴 배지 구조 일치화 */
+        .card-badge-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; margin-bottom: 12px; }
+        .card-label { display: inline-flex; justify-content: center; align-items: center; height: 32px; border-radius: 6px; font-size: 14.4px; font-weight: bold; color: #fff; width: 100%; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .card-ratio { display: inline-flex; justify-content: center; align-items: center; height: 32px; border-radius: 6px; font-size: 14.4px; font-weight: bold; color: #fff; background-color: rgba(255,255,255,0.15); width: 100%; }
+        .card-value { font-size: 16px; font-weight: bold; color: #fff; text-align: right; padding-right: 4px; }
+        
+        /* 뱃지 컬러 클래스 매칭 */
+        .bg-total { background-color: var(--color-total); }
+        .bg-stock { background-color: var(--color-stock); }
+        .bg-bond { background-color: var(--color-bond); }
+        .bg-cash { background-color: var(--color-cash); }
+        .bg-gold { background-color: var(--color-gold); }
 
-        /* 차트 영역 */
-        .chart-box { background-color: #121212; border-radius: 12px; flex-grow: 1; padding: 20px; border: 1px solid #222; }
-        .chart-placeholder { color: #444; text-align: center; margin-top: 100px; }
+        /* 콘텐츠 내부 영역 상자 */
+        .content-box { flex: 1; border: 1px solid var(--vv-border); border-radius: 8px; background-color: #0b0b0b; padding: 15px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        
+        /* 트리맵 구조 스타일 지정 */
+        .treemap-wrapper { flex: 1; width: 100%; height: 100%; position: relative; background-color: #0b0b0b; overflow: hidden; }
+        
+        /* 트리맵 내 텍스트 크기 기존(18px, 14px, 15px) 대비 1.5배 상향 확대 조정 */
+        .tm-block { position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 10px; font-family: 'Pretendard', sans-serif; transition: opacity 0.2s; box-sizing: border-box; }
+        .tm-block:hover { opacity: 0.9; }
+        .tm-title { font-size: 27px; font-weight: bold; margin-bottom: 9px; }
+        .tm-ratio { font-size: 21px; margin-bottom: 6px; opacity: 0.9; }
+        .tm-val { font-size: 22.5px; font-weight: 500; }
+
+        /* 그래프 화면용 상단 필터/옵션 바 */
+        .graph-filter-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; font-size: 13px; color: #fff; }
+        .checkbox-group { display: flex; align-items: center; gap: 16px; }
+        .checkbox-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .checkbox-item input { cursor: pointer; accent-color: var(--point-blue); width: 15px; height: 15px; }
+
+        /* 차트 캔버스 조절 */
+        .chart-container { flex: 1; width: 100%; height: 100%; position: relative; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h1>자산관리<br>사이트</h1>
-        <div class="nav-item active">대시보드</div>
-        <div class="nav-item">주식거래내역</div>
-        <div class="nav-item">예금거래내역</div>
-        <div class="logout-btn" onclick="signOut()">로그아웃</div>
+    <div class="top-section">
+        <div class="logo-box">
+            <a href="select_page.html" style="color: var(--vv-text-mint); font-weight: bold; text-decoration: none; font-size: 16px; letter-spacing: 1px;">HOME</a>
+        </div>
+        <div class="header-menu">
+            <a href="#" class="active">자산현황</a>
+            <a href="stock.html">주식투자</a>
+            <a href="stock_ipo.html">공모주투자</a>
+            <a href="deposit.html">예적금</a>
+            <a href="#" class="nav-item" onclick="location.reload(true); return false;">새로고침</a>
+        </div>
     </div>
 
-    <div class="main-content">
-        <div class="card-container">
-            <div class="card"><div class="label-box red">총자산</div><div class="value">619,409,885</div></div>
-            <div class="card"><div class="label-box pink">주식합계</div><div class="value">217,138,950</div></div>
-            <div class="card"><div class="label-box purple">채권합계</div><div class="value">21,991,785</div></div>
-            <div class="card"><div class="label-box blue">현금합계</div><div class="value">206,105,990</div></div>
-            <div class="card"><div class="label-box yellow">금합계</div><div class="value">56,323,160</div></div>
-            <div class="card"><div class="label-box gray">예금합계</div><div class="value">117,850,000</div></div>
-        </div>
+    <div class="wrapper">
+        <nav>
+            <div class="sidebar-logo-box"><img src="rabbit.jpg" alt="로고" onerror="this.src=''"></div>
+            <button id="btn-dashboard" class="nav-btn active" onclick="switchDashboardView('dashboard')">대시보드</button>
+            <button id="btn-graph" class="nav-btn" onclick="switchDashboardView('graph')">월별자산그래프</button>
+        </nav>
 
-        <div class="chart-box">
-            <div class="chart-placeholder">차트 데이터 로딩 중...</div>
-        </div>
+        <main id="main-dashboard">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-total">총자산</span>
+                        <span class="card-ratio">100%</span>
+                    </div>
+                    <div id="db-val-total" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-stock">주식</span>
+                        <span id="db-ratio-stock" class="card-ratio">0%</span>
+                    </div>
+                    <div id="db-val-stock" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-bond">채권</span>
+                        <span id="db-ratio-bond" class="card-ratio">0%</span>
+                    </div>
+                    <div id="db-val-bond" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-cash">현금</span>
+                        <span id="db-ratio-cash" class="card-ratio">0%</span>
+                    </div>
+                    <div id="db-val-cash" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-gold">기타(금은)</span>
+                        <span id="db-ratio-gold" class="card-ratio">0%</span>
+                    </div>
+                    <div id="db-val-gold" class="card-value">0 원</div>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <div id="treemap-container" class="treemap-wrapper"></div>
+            </div>
+        </main>
+
+        <main id="main-graph" style="display: none;">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-total">총자산</span>
+                        <span class="card-ratio">100%</span>
+                    </div>
+                    <div id="gr-val-total" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-stock">주식</span>
+                        <span id="gr-ratio-stock" class="card-ratio">0%</span>
+                    </div>
+                    <div id="gr-val-stock" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-bond">채권</span>
+                        <span id="gr-ratio-bond" class="card-ratio">0%</span>
+                    </div>
+                    <div id="gr-val-bond" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-cash">현금</span>
+                        <span id="gr-ratio-cash" class="card-ratio">0%</span>
+                    </div>
+                    <div id="gr-val-cash" class="card-value">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-badge-row">
+                        <span class="card-label bg-gold">기타(금은)</span>
+                        <span id="gr-ratio-gold" class="card-ratio">0%</span>
+                    </div>
+                    <div id="gr-val-gold" class="card-value">0 원</div>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <div class="graph-filter-bar" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="chk-total" checked onchange="updateLineChart()"> 총자산</label>
+                        <label class="checkbox-item"><input type="checkbox" id="chk-stock" checked onchange="updateLineChart()"> 주식</label>
+                        <label class="checkbox-item"><input type="checkbox" id="chk-bond" checked onchange="updateLineChart()"> 채권</label>
+                        <label class="checkbox-item"><input type="checkbox" id="chk-cash" checked onchange="updateLineChart()"> 현금</label>
+                        <label class="checkbox-item"><input type="checkbox" id="chk-gold" checked onchange="updateLineChart()"> 기타(금은)</label>
+                    </div>
+                    
+                    <div>
+                        <select id="sel-year" onchange="fetchGraphMonthlyData()" style="background: var(--vv-bg-main); color: var(--vv-text-main); border: 1px solid var(--vv-border); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;">
+                            <option value="2026" selected>2026년</option>
+                            <option value="2027">2027년</option>
+                            <option value="2028">2028년</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        // Supabase 설정
-        const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
-        const SUPABASE_KEY = '본인의_Key';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // 전역 변수와 함수
+        let globalUsdToKrw = 1350;
+        window.cachedGasData = null;
 
-        // [보안] 로그인 세션 체크
-        window.onload = async () => {
-            const { data: { session } } = await _supabase.auth.getSession();
-            if (!session) {
-                alert("비정상적인 접근입니다. 로그인 페이지로 이동합니다.");
-                location.href = 'index.html';
+        async function initExchangeRate() {
+            try {
+                const rateRes = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(3000) });
+                const rateJson = await rateRes.json();
+                if(rateJson?.rates?.KRW) {
+                    globalUsdToKrw = rateJson.rates.KRW;
+                }
+            } catch(e) {
+                console.warn("환율 조회 실패 (기본값 사용):", e);
             }
-        };
-
-        async function signOut() {
-            await _supabase.auth.signOut();
-            location.href = 'index.html';
         }
+
+        async function preloadGoogleStockPrices() {
+            const gasUrl = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
+            try {
+                const response = await fetch(`${gasUrl}?t=${new Date().getTime()}`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                const data = await response.json();
+                if (data && data.status === "success") {
+                    window.cachedGasData = data.stockPrices;
+                    console.log("✅ 대시보드 - 시세 로드 성공");
+                }
+            } catch (error) {
+                console.error("❌ 대시보드 - 시세 로드 실패:", error);
+            }
+        }
+
+        function getLivePriceRowWithFallback(stockCode, fallbackPrice) {
+            let currentPriceKrw = fallbackPrice;
+            if (stockCode && window.cachedGasData && window.cachedGasData[stockCode]) {
+                let livePriceKrw = window.cachedGasData[stockCode].price || 0;
+                if (livePriceKrw > 0) {
+                    currentPriceKrw = livePriceKrw;
+                }
+            }
+            return currentPriceKrw;
+        }
+
+        // Supabase 초기화 설정
+        const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l';
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let myLineChart = null;
+        let currentChartData = { labels: [], total: [], stock: [], bond: [], cash: [], gold: [] };
+
+        // 화면 탭 변환 함수
+        function switchDashboardView(viewMode) {
+            const btnDb = document.getElementById('btn-dashboard');
+            const btnGr = document.getElementById('btn-graph');
+            const mainDb = document.getElementById('main-dashboard');
+            const mainGr = document.getElementById('main-graph');
+
+            if(viewMode === 'dashboard') {
+                if(btnDb) btnDb.classList.add('active');
+                if(btnGr) btnGr.classList.remove('active');
+                if(mainDb) mainDb.style.display = 'flex';
+                if(mainGr) mainGr.style.display = 'none';
+                renderDynamicTreemap();
+            } else {
+                if(btnGr) btnGr.classList.add('active');
+                if(btnDb) btnDb.classList.remove('active');
+                if(mainGr) mainGr.style.display = 'flex';
+                if(mainDb) mainDb.style.display = 'none';
+                
+                fetchGraphMonthlyData().then(() => {
+                    setTimeout(() => {
+                        initLineChart();
+                    }, 100);
+                });
+            }
+        }
+
+        // =========================================================================
+        // 1. 실시간 Supabase 데이터 fetch 및 자산 정산 프로세스 (원화 현재가 총합 반영)
+        // =========================================================================
+        async function fetchDashboardData() {
+            if (!_supabase) return;
+
+            await initExchangeRate();
+            await preloadGoogleStockPrices();
+
+            try {
+                // 1. 주식/채권/금은 거래 내역 가져오기
+                const { data: trades, error: tradeError } = await _supabase.from('tb_stock_trade').select('*');
+                if (tradeError) throw tradeError;
+
+                // 2. 예적금/현금 내역 가져오기 (상태가 '유지'인 항목만)
+                const { data: deposits, error: depositError } = await _supabase
+                    .from('deposit_management')
+                    .select('total_amount')
+                    .eq('status', '유지');
+                if (depositError) throw depositError;
+
+                const stockMap = {};
+                (trades || []).forEach(trade => {
+                    const key = trade.stock_code || trade.stock_name;
+                    if (!stockMap[key]) {
+                        stockMap[key] = {
+                            asset_type: trade.asset_type,
+                            stock_name: trade.stock_name,
+                            stock_code: trade.stock_code,
+                            balance: 0,
+                            total_cost: 0
+                        };
+                    }
+                    const s = stockMap[key];
+                    const qty = parseFloat(trade.quantity) || 0;
+                    const amt = parseFloat(trade.amount_krw) || 0;
+
+                    if (trade.trade_side === '매수') {
+                        s.balance += qty;
+                        s.total_cost += amt; // 평단가 계산용 원본 매수 총액 누적
+                    } else if (trade.trade_side === '매도') {
+                        s.balance -= qty;
+                        // 보완: 매도 시 total_cost를 단순히 차감하면 왜곡되므로 남은 평단가 비율대로 조정하거나, 
+                        // 잔고가 0이 될 때만 클리어 처리하여 안정성을 확보합니다.
+                        if (s.balance <= 0) {
+                            s.balance = 0;
+                            s.total_cost = 0;
+                        }
+                    }
+                });
+
+                const processedStocks = Object.values(stockMap).filter(s => s.balance > 0).map(s => {
+                    const avgPrice = s.total_cost / s.balance;
+                    // 공통 가공 함수(getLivePriceRowWithFallback)를 연동하여 가독성 및 안전성 확보
+                    const livePrice = getLivePriceRowWithFallback(s.stock_code, avgPrice);
+                    s.live_current_krw = s.balance * livePrice;
+                    return s;
+                });
+
+                let stockSum = 0, bondSum = 0, goldSum = 0, cashSum = 0;
+                
+                processedStocks.forEach(s => {
+                    if (s.asset_type === '주식') stockSum += s.live_current_krw;
+                    else if (s.asset_type === '채권') bondSum += s.live_current_krw;
+                    else if (s.asset_type === '금은') goldSum += s.live_current_krw;
+                });
+
+                (deposits || []).forEach(d => {
+                    cashSum += parseFloat(d.total_amount) || 0;
+                });
+
+                const totalSum = stockSum + bondSum + goldSum + cashSum;
+
+                // UI 및 트리맵 업데이트
+                updateSummaryCardUI(totalSum, stockSum, bondSum, cashSum, goldSum);
+                updateDashboardTreemapData(stockSum, bondSum, cashSum, goldSum);
+
+            } catch (err) {
+                console.error("대시보드 데이터 처리 에러:", err);
+            }
+        }
+
+        // =========================================================================
+        // 2. 월별 스냅샷 데이터 수집 및 만원 단위 정산 알고리즘
+        // =========================================================================
+        async function fetchGraphMonthlyData() {
+            if (!_supabase) return;
+
+            const selectedYear = document.getElementById('sel-year').value;
+
+            try {
+                const { data: snapshots, error: snapshotError } = await _supabase
+                    .from('tb_monthly_snapshot')
+                    .select('*')
+                    .like('snapshot_month', `${selectedYear}-%`);
+
+                if (snapshotError) throw snapshotError;
+
+                const monthlyMap = {};
+                for (let m = 1; m <= 12; m++) {
+                    const monthStr = String(m).padStart(2, '0');
+                    monthlyMap[`${selectedYear}-${monthStr}`] = { total_sum: 0, stock_sum: 0, bond_sum: 0, cash_sum: 0, gold_sum: 0 };
+                }
+
+                (snapshots || []).forEach(snap => {
+                    if (monthlyMap[snap.snapshot_month]) {
+                        monthlyMap[snap.snapshot_month] = {
+                            total_sum: parseFloat(snap.total_sum) || 0,
+                            stock_sum: parseFloat(snap.stock_sum) || 0,
+                            bond_sum: parseFloat(snap.bond_sum) || 0,
+                            cash_sum: parseFloat(snap.cash_sum) || 0,
+                            gold_sum: parseFloat(snap.gold_sum) || 0
+                        };
+                    }
+                });
+
+                const labels = [];
+                const timelineTotal = [];
+                const timelineStock = [];
+                const timelineBond = [];
+                const timelineCash = [];
+                const timelineGold = [];
+
+                for (let m = 1; m <= 12; m++) {
+                    labels.push(`${m}월`);
+                    const monthStr = String(m).padStart(2, '0');
+                    const dataKey = `${selectedYear}-${monthStr}`;
+                    const targetData = monthlyMap[dataKey];
+
+                    timelineTotal.push(Math.floor(targetData.total_sum / 10000));
+                    timelineStock.push(Math.floor(targetData.stock_sum / 10000));
+                    timelineBond.push(Math.floor(targetData.bond_sum / 10000));
+                    timelineCash.push(Math.floor(targetData.cash_sum / 10000));
+                    timelineGold.push(Math.floor(targetData.gold_sum / 10000));
+                }
+
+                currentChartData = {
+                    labels: labels,
+                    total: timelineTotal,
+                    stock: timelineStock,
+                    bond: timelineBond,
+                    cash: timelineCash,
+                    gold: timelineGold
+                };
+
+                if (myLineChart) {
+                    myLineChart.data.labels = currentChartData.labels;
+                    myLineChart.data.datasets[0].data = currentChartData.total;
+                    myLineChart.data.datasets[1].data = currentChartData.stock;
+                    myLineChart.data.datasets[2].data = currentChartData.bond;
+                    myLineChart.data.datasets[3].data = currentChartData.cash;
+                    myLineChart.data.datasets[4].data = currentChartData.gold;
+                    myLineChart.update();
+                }
+
+            } catch (err) {
+                console.error("그래프 월별 데이터 로드 에러:", err);
+            }
+        }
+
+        function updateTextSafe(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
+        function updateSummaryCardUI(total, stock, bond, cash, gold) {
+            const stockRatio = total > 0 ? ((stock / total) * 100).toFixed(1) : '0.0';
+            const bondRatio = total > 0 ? ((bond / total) * 100).toFixed(1) : '0.0';
+            const cashRatio = total > 0 ? ((cash / total) * 100).toFixed(1) : '0.0';
+            const goldRatio = total > 0 ? ((gold / total) * 100).toFixed(1) : '0.0';
+
+            const prefixes = ['db-', 'gr-'];
+            prefixes.forEach(prefix => {
+                updateTextSafe(`${prefix}val-total`, Math.floor(total).toLocaleString() + ' 원');
+                updateTextSafe(`${prefix}val-stock`, Math.floor(stock).toLocaleString() + ' 원');
+                updateTextSafe(`${prefix}ratio-stock`, stockRatio + '%');
+                updateTextSafe(`${prefix}val-bond`, Math.floor(bond).toLocaleString() + ' 원');
+                updateTextSafe(`${prefix}ratio-bond`, bondRatio + '%');
+                updateTextSafe(`${prefix}val-cash`, Math.floor(cash).toLocaleString() + ' 원');
+                updateTextSafe(`${prefix}ratio-cash`, cashRatio + '%');
+                updateTextSafe(`${prefix}val-gold`, Math.floor(gold).toLocaleString() + ' 원');
+                updateTextSafe(`${prefix}ratio-gold`, goldRatio + '%');
+            });
+        }
+
+        function updateDashboardTreemapData(stock, bond, cash, gold) {
+            window.dashboardAssetData = [
+                { label: '주식투자', value: stock, color: 'var(--color-stock)' },
+                { label: '채권', value: bond, color: 'var(--color-bond)' },
+                { label: '예적금/현금', value: cash, color: 'var(--color-cash)' },
+                { label: '기타자산(금은)', value: gold, color: 'var(--color-gold)' }
+            ];
+            renderDynamicTreemap();
+        }
+
+        function renderDynamicTreemap() {
+            const container = document.getElementById('treemap-container');
+            if (!container) return;
+            container.innerHTML = "";
+            
+            const rawData = window.dashboardAssetData || [];
+            const data = rawData.filter(item => typeof item.value === 'number' && !isNaN(item.value) && item.value > 0);
+            
+            const totalValue = data.reduce((sum, item) => sum + item.value, 0);
+            if(totalValue === 0) {
+                container.innerHTML = '<div style="color:var(--vv-text-muted); padding:20px; text-align:center;">표시할 실시간 자산 데이터가 없습니다.</div>';
+                return;
+            }
+            
+            const cWidth = container.clientWidth;
+            const cHeight = container.clientHeight;
+            if (cWidth === 0 || cHeight === 0) return; 
+
+            const sortedItems = [...data].sort((a, b) => b.value - a.value);
+            let left = 0, top = 0, right = cWidth, bottom = cHeight;
+
+            sortedItems.forEach((item, index) => {
+                const blockWidth = right - left;
+                const blockHeight = bottom - top;
+                const currentTotal = sortedItems.slice(index).reduce((acc, cur) => acc + cur.value, 0);
+                
+                if (currentTotal === 0 || blockWidth <= 0 || blockHeight <= 0) return;
+                
+                const ratio = item.value / currentTotal;
+                let bLeft = left, bTop = top, bWidth = blockWidth, bHeight = blockHeight;
+
+                if (index === 0) {
+                    bWidth = blockWidth * ratio;
+                    left += bWidth;
+                } else if (index === 1) {
+                    bHeight = blockHeight * ratio;
+                    top += bHeight;
+                } else if (index === 2) {
+                    bWidth = blockWidth * ratio;
+                    left += bWidth;
+                } else {
+                    bLeft = left; bTop = top; bWidth = right - left; bHeight = bottom - top;
+                }
+
+                const displayRatio = ((item.value / totalValue) * 100).toFixed(1);
+                const blockEl = document.createElement('div');
+                blockEl.className = 'tm-block';
+                blockEl.style.left = `${Math.max(0, bLeft)}px`;
+                blockEl.style.top = `${Math.max(0, bTop)}px`;
+                blockEl.style.width = `${Math.max(0, bWidth)}px`;
+                blockEl.style.height = `${Math.max(0, bHeight)}px`;
+                blockEl.style.backgroundColor = item.color;
+                blockEl.style.position = 'absolute';
+
+                blockEl.innerHTML = `
+                    <div class="tm-title">${item.label}</div>
+                    <div class="tm-ratio">${displayRatio}%</div>
+                    <div class="tm-val">${Math.floor(item.value).toLocaleString()} 원</div>
+                `;
+                container.appendChild(blockEl);
+            });
+        }
+
+        // =========================================================================
+        // 5. Chart.js 라인 차트 생성 및 체크박스 필터 제어
+        // =========================================================================
+        function initLineChart() {
+            const ctx = document.getElementById('lineChart');
+            if (!ctx) return;
+
+            if (myLineChart) {
+                myLineChart.destroy();
+            }
+
+            myLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: currentChartData.labels,
+                    datasets: [
+                        { label: '총자산', data: currentChartData.total, borderColor: '#ff0000', backgroundColor: 'transparent', tension: 0.1, borderWidth: 3 },
+                        { label: '주식', data: currentChartData.stock, borderColor: '#ff00bf', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
+                        { label: '채권', data: currentChartData.bond, borderColor: '#00b050', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
+                        { label: '현금', data: currentChartData.cash, borderColor: '#7030a0', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
+                        // 일치화: 차트 선 색상도 상단 뱃지 및 CSS 정의(--color-gold: #0070c0)와 동일하게 매칭
+                        { label: '금은', data: currentChartData.gold, borderColor: '#0070c0', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#232323' }, ticks: { color: '#888' } },
+                        y: { 
+                            grid: { color: '#232323' }, 
+                            ticks: { 
+                                color: '#888',
+                                callback: function(value) { return value.toLocaleString() + ' 만원'; }
+                            } 
+                        }
+                    }
+                }
+            });
+
+            updateLineChart();
+        }
+
+        function updateLineChart() {
+            if(!myLineChart) return;
+            
+            myLineChart.data.datasets[0].hidden = !document.getElementById('chk-total').checked;
+            myLineChart.data.datasets[1].hidden = !document.getElementById('chk-stock').checked;
+            myLineChart.data.datasets[2].hidden = !document.getElementById('chk-bond').checked;
+            myLineChart.data.datasets[3].hidden = !document.getElementById('chk-cash').checked;
+            myLineChart.data.datasets[4].hidden = !document.getElementById('chk-gold').checked;
+            
+            myLineChart.update();
+        }
+
+        function bindCheckboxEvents() {
+            const ids = ['chk-total', 'chk-stock', 'chk-bond', 'chk-cash', 'chk-gold'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.onchange = updateLineChart;
+                }
+            });
+        }
+
+        // 로드 완료 직후 순차 비동기 제어 구조로 보완
+        window.addEventListener('DOMContentLoaded', async () => {
+            bindCheckboxEvents(); 
+            // 💡 데이터를 먼저 가져온 뒤 뷰 모드를 세팅하여 트리맵이 온전한 데이터로 그려지도록 유도
+            await fetchDashboardData();
+            switchDashboardView('dashboard');
+            
+            window.addEventListener('resize', () => {
+                clearTimeout(window.resizeTimer);
+                window.resizeTimer = setTimeout(renderDynamicTreemap, 100);
+            });
+        });
     </script>
 </body>
 </html>
