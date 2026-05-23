@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식관리 시스템 - 모바일 대시보드</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --vv-bg-main: #121212;
+            --vv-bg-card: #2c2c2c;
+            --vv-border: #3d3d3d;
+            --vv-text-main: rgba(255, 255, 255, 0.95);
+            --vv-text-muted: rgba(255, 255, 255, 0.65);
+            --vv-text-mint: #03dac6;
+            --point-blue: #3b82f6;
+            --point-green: #2ecc71;
+            
+            /* 자산별 테마 색상 */
+            --color-total: #ff0000;
+            --color-stock: #ff00bf;
+            --color-bond: #00b050;
+            --color-cash: #7030a0;
+            --color-gold: #0070c0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: var(--vv-bg-main); 
+            color: var(--vv-text-main); 
+            font-family: 'Pretendard', sans-serif; 
+            padding: 12px; 
+            min-height: 100vh;
+        }
+
+        /* 모바일 상단 네비게이션 바 */
+        .top-section { 
+            display: flex; 
+            flex-direction: column;
+            gap: 8px; 
+            margin-bottom: 15px; 
+        }
+        
+        .header-menu { 
+            border: 1px solid var(--vv-border); 
+            border-radius: 8px; 
+            display: flex; 
+            background-color: var(--vv-bg-card); 
+            overflow-hidden; 
+            width: 100%;
+        }
+        
+        .header-menu a { 
+            flex: 1; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            text-decoration: none; 
+            color: var(--vv-text-main); 
+            font-weight: 600; 
+            font-size: 13px;
+            padding: 12px 0;
+            border-right: 1px solid var(--vv-border); 
+            transition: 0.2s; 
+            text-align: center;
+        }
+        
+        .header-menu a:last-child { border-right: none; }
+        .header-menu a.active { background-color: var(--point-blue); color: white; }
+        .header-menu a.home-btn { color: var(--vv-text-mint); }
+
+        /* 메인 콘텐츠 영역 (사이드바 제거로 단일 배치) */
+        main { 
+            width: 100%;
+        }
+        
+        /* 모바일용 자산 요약 카드 그리드 (화면 폭에 따라 1~2열 자동 대응) */
+        .summary-grid { 
+            display: grid; 
+            grid-template-columns: repeat(1, 1fr); 
+            gap: 12px; 
+            margin-bottom: 20px; 
+        }
+        
+        @media (min-width: 480px) {
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .summary-card { 
+            background: var(--vv-bg-card); 
+            border: 1px solid var(--vv-border); 
+            border-radius: 12px; 
+            padding: 14px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
+        }
+        
+        /* 자산별 뱃지 구조 스타일 */
+        .card-badge-row { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 8px; 
+            align-items: center; 
+            margin-bottom: 12px; 
+        }
+        
+        .card-label { 
+            display: inline-flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 32px; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: #fff; 
+            width: 100%; 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5); 
+        }
+        
+        .card-ratio { 
+            display: inline-flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 32px; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: #fff; 
+            background-color: rgba(255,255,255,0.15); 
+            width: 100%; 
+        }
+        
+        .card-value { 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #fff; 
+            text-align: right; 
+            padding-right: 4px; 
+        }
+        
+        /* 뱃지 컬러 클래스 */
+        .bg-total { background-color: var(--color-total); }
+        .bg-stock { background-color: var(--color-stock); }
+        .bg-bond { background-color: var(--color-bond); }
+        .bg-cash { background-color: var(--color-cash); }
+        .bg-gold { background-color: var(--color-gold); }
+    </style>
+</head>
+<body>
+
+    <div class="top-section">
+        <div class="header-menu">
+            <a href="m.select_page.html" class="home-btn">홈</a>
+            <a href="#" class="active">자산현황</a>
+            <a href="m.stock.html">주식</a>
+            <a href="m.stock_ipo.html">공모주</a>
+            <a href="m.deposit.html">예적금</a>
+        </div>
+    </div>
+
+    <main id="main-dashboard">
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="card-badge-row">
+                    <span class="card-label bg-total">총자산</span>
+                    <span class="card-ratio">100%</span>
+                </div>
+                <div id="db-val-total" class="card-value">0 원</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-badge-row">
+                    <span class="card-label bg-stock">주식</span>
+                    <span id="db-ratio-stock" class="card-ratio">0%</span>
+                </div>
+                <div id="db-val-stock" class="card-value">0 원</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-badge-row">
+                    <span class="card-label bg-bond">채권</span>
+                    <span id="db-ratio-bond" class="card-ratio">0%</span>
+                </div>
+                <div id="db-val-bond" class="card-value">0 원</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-badge-row">
+                    <span class="card-label bg-cash">현금</span>
+                    <span id="db-ratio-cash" class="card-ratio">0%</span>
+                </div>
+                <div id="db-val-cash" class="card-value">0 원</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-badge-row">
+                    <span class="card-label bg-gold">기타(금은)</span>
+                    <span id="db-ratio-gold" class="card-ratio">0%</span>
+                </div>
+                <div id="db-val-gold" class="card-value">0 원</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 전역 변수 설정
+        let globalUsdToKrw = 1350;
+        window.cachedGasData = null;
+
+        /**
+         * 실시간 환율 정보 조회
+         */
+        async function initExchangeRate() {
+            try {
+                const rateRes = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(3000) });
+                const rateJson = await rateRes.json();
+                if(rateJson?.rates?.KRW) {
+                    globalUsdToKrw = rateJson.rates.KRW;
+                }
+            } catch(e) {
+                console.warn("환율 조회 실패 (기본값 사용):", e);
+            }
+        }
+
+        /**
+         * Google Apps Script 구글시세 캐싱 로드
+         */
+        async function preloadGoogleStockPrices() {
+            const gasUrl = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
+            try {
+                const response = await fetch(`${gasUrl}?t=${new Date().getTime()}`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                const data = await response.json();
+                if (data && data.status === "success") {
+                    window.cachedGasData = data.stockPrices;
+                    console.log("✅ 모바일 대시보드 - 시세 로드 성공");
+                }
+            } catch (error) {
+                console.error("❌ 모바일 대시보드 - 시세 로드 실패:", error);
+            }
+        }
+
+        /**
+         * 종목 코드별 실시간 가격 연동 안전 핸들러
+         */
+        function getLivePriceRowWithFallback(stockCode, fallbackPrice) {
+            let currentPriceKrw = fallbackPrice;
+            if (stockCode && window.cachedGasData && window.cachedGasData[stockCode]) {
+                let livePriceKrw = window.cachedGasData[stockCode].price || 0;
+                if (livePriceKrw > 0) {
+                    currentPriceKrw = livePriceKrw;
+                }
+            }
+            return currentPriceKrw;
+        }
+
+        // Supabase 초기화 설정
+        const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l';
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        /**
+         * 실시간 Supabase 데이터 fetch 및 자산 정산 프로세스
+         */
+        async function fetchDashboardData() {
+            if (!_supabase) return;
+
+            await initExchangeRate();
+            await preloadGoogleStockPrices();
+
+            try {
+                // 1. 주식/채권/금은 거래 내역 가져오기
+                const { data: trades, error: tradeError } = await _supabase.from('tb_stock_trade').select('*');
+                if (tradeError) throw tradeError;
+
+                // 2. 예적금/현금 내역 가져오기 (상태가 '유지'인 항목만)
+                const { data: deposits, error: depositError } = await _supabase
+                    .from('deposit_management')
+                    .select('total_amount')
+                    .eq('status', '유지');
+                if (depositError) throw depositError;
+
+                const stockMap = {};
+                (trades || []).forEach(trade => {
+                    const key = trade.stock_code || trade.stock_name;
+                    if (!stockMap[key]) {
+                        stockMap[key] = {
+                            asset_type: trade.asset_type,
+                            stock_name: trade.stock_name,
+                            stock_code: trade.stock_code,
+                            balance: 0,
+                            total_cost: 0
+                        };
+                    }
+                    const s = stockMap[key];
+                    const qty = parseFloat(trade.quantity) || 0;
+                    const amt = parseFloat(trade.amount_krw) || 0;
+
+                    if (trade.trade_side === '매수') {
+                        s.balance += qty;
+                        s.total_cost += amt;
+                    } else if (trade.trade_side === '매도') {
+                        s.balance -= qty;
+                        if (s.balance <= 0) {
+                            s.balance = 0;
+                            s.total_cost = 0;
+                        }
+                    }
+                });
+
+                const processedStocks = Object.values(stockMap).filter(s => s.balance > 0).map(s => {
+                    const avgPrice = s.total_cost / s.balance;
+                    const livePrice = getLivePriceRowWithFallback(s.stock_code, avgPrice);
+                    s.live_current_krw = s.balance * livePrice;
+                    return s;
+                });
+
+                let stockSum = 0, bondSum = 0, goldSum = 0, cashSum = 0;
+                
+                processedStocks.forEach(s => {
+                    if (s.asset_type === '주식') stockSum += s.live_current_krw;
+                    else if (s.asset_type === '채권') bondSum += s.live_current_krw;
+                    else if (s.asset_type === '금은') goldSum += s.live_current_krw;
+                });
+
+                (deposits || []).forEach(d => {
+                    cashSum += parseFloat(d.total_amount) || 0;
+                });
+
+                const totalSum = stockSum + bondSum + goldSum + cashSum;
+
+                // UI 바인딩 업데이트 실행
+                updateSummaryCardUI(totalSum, stockSum, bondSum, cashSum, goldSum);
+
+            } catch (err) {
+                console.error("모바일 대시보드 데이터 정산 중 에러 발생:", err);
+            }
+        }
+
+        function updateTextSafe(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
+        /**
+         * 수집 완료된 금액 및 비율 실시간 UI 랜더링
+         */
+        function updateSummaryCardUI(total, stock, bond, cash, gold) {
+            const stockRatio = total > 0 ? ((stock / total) * 100).toFixed(1) : '0.0';
+            const bondRatio = total > 0 ? ((bond / total) * 100).toFixed(1) : '0.0';
+            const cashRatio = total > 0 ? ((cash / total) * 100).toFixed(1) : '0.0';
+            const goldRatio = total > 0 ? ((gold / total) * 100).toFixed(1) : '0.0';
+
+            updateTextSafe(`db-val-total`, Math.floor(total).toLocaleString() + ' 원');
+            updateTextSafe(`db-val-stock`, Math.floor(stock).toLocaleString() + ' 원');
+            updateTextSafe(`db-ratio-stock`, stockRatio + '%');
+            updateTextSafe(`db-val-bond`, Math.floor(bond).toLocaleString() + ' 원');
+            updateTextSafe(`db-ratio-bond`, bondRatio + '%');
+            updateTextSafe(`db-val-cash`, Math.floor(cash).toLocaleString() + ' 원');
+            updateTextSafe(`db-ratio-cash`, cashRatio + '%');
+            updateTextSafe(`db-val-gold`, Math.floor(gold).toLocaleString() + ' 원');
+            updateTextSafe(`db-ratio-gold`, goldRatio + '%');
+        }
+
+        // 페이지 진입 즉시 실시간 데이터 갱신 루틴 가동
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchDashboardData();
+        });
+    </script>
+</body>
+</html>
