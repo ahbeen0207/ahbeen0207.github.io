@@ -171,16 +171,24 @@
                     messageDiv.innerText = "성공! 이동 중입니다...";
 
                     // --- 리다이렉트 분기 로직 ---
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirectTo = urlParams.get('redirect');
+					const urlParams = new URLSearchParams(window.location.search);
+					const redirectTo = urlParams.get('redirect');
 
-                    setTimeout(() => {
-                        if (redirectTo) {
-                            window.location.href = decodeURIComponent(redirectTo);
-                        } else {
-                            window.location.href = 'select_page.html';
-                        }
-                    }, 800);
+					setTimeout(() => {
+						if (redirectTo) {
+							// 딛고 온 페이지가 있으면 안전하게 디코딩 후 앞단에 주소 유효성 처리
+							let targetPage = decodeURIComponent(redirectTo);
+							
+							// 경로 앞에 슬래시가 없다면 붙여서 확실한 루트 경로로 만들어 이동합니다.
+							if (!targetPage.startsWith('/') && !targetPage.startsWith('.')) {
+								targetPage = './' + targetPage;
+							}
+							window.location.href = targetPage;
+						} else {
+							// 파라미터가 없으면 메뉴 선택 화면으로 명확하게 리다이렉트
+							window.location.href = './select_page.html';
+						}
+					}, 800);
                 }
             } catch (err) {
                 // 네트워크 에러 등 예외 처리
