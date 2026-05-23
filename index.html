@@ -62,16 +62,15 @@
         .login-btn:hover { background: #2563eb; }
         .login-btn:disabled {
             background: #1d4ed8;
-            color: #93c5fd;
+            opacity: 0.6;
             cursor: not-allowed;
-            opacity: 0.7;
         }
 
         .options {
             display: flex;
             align-items: center;
             font-size: 13px;
-            color: #888; /* 가독성을 위해 회색 톤을 약간 밝게 조정 */
+            color: #888;
             margin-top: 16px;
             user-select: none;
         }
@@ -83,7 +82,6 @@
             font-size: 13px;
             min-height: 20px;
             color: #ef4444;
-            word-break: keep-all;
         }
     </style>
 </head>
@@ -93,10 +91,10 @@
         <div class="logo">💙</div>
         <form id="loginForm">
             <div class="input-group">
-                <input type="email" id="email" placeholder="이메일 주소" autocomplete="username" required>
+                <input type="email" id="email" placeholder="이메일 주소" required>
             </div>
             <div class="input-group">
-                <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" required>
+                <input type="password" id="password" placeholder="비밀번호" required>
             </div>
             <div class="options">
                 <input type="checkbox" id="saveId">
@@ -108,42 +106,39 @@
     </div>
 
     <script>
-        // Supabase 설정 (자산관리 프로젝트용)
+        // Supabase 설정
         const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l'; 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const loginForm = document.getElementById('loginForm');
         const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
         const saveIdCheckbox = document.getElementById('saveId');
         const loginBtn = document.getElementById('loginBtn');
         const messageDiv = document.getElementById('message');
 
-        // 페이지 로드시 아이디 저장 체크 여부 확인
         window.onload = function() {
             const savedEmail = localStorage.getItem('savedEmail');
             if (savedEmail) {
                 emailInput.value = savedEmail;
                 saveIdCheckbox.checked = true;
-                passwordInput.focus(); // 아이디가 있으면 비밀번호 창으로 바로 포커스
+                document.getElementById('password').focus();
             } else {
                 emailInput.focus();
             }
         };
 
         loginForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
+            e.preventDefault(); // 기본 form 제출로 인한 페이지 새로고침 차단
             
             const email = emailInput.value;
-            const password = passwordInput.value;
+            const password = document.getElementById('password').value;
             
-            // 상태 초기화 및 버튼 비활성화 (중복 클릭 방지)
+            // UI 초기화 및 중복 클릭 방지
             messageDiv.innerText = "";
             loginBtn.disabled = true;
             loginBtn.innerText = "Signing in...";
 
-            // 아이디 저장 로직 처리
             if (saveIdCheckbox.checked) {
                 localStorage.setItem('savedEmail', email);
             } else {
@@ -151,7 +146,6 @@
             }
 
             try {
-                // Supabase 로그인 시도
                 const { data, error } = await _supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
@@ -160,40 +154,35 @@
                 if (error) {
                     messageDiv.style.color = "#ef4444";
                     messageDiv.innerText = "로그인 실패: " + error.message;
-                    passwordInput.value = ""; // 실패 시 비밀번호 창 초기화
-                    passwordInput.focus();
-                    
-                    // 버튼 재활성화
                     loginBtn.disabled = false;
                     loginBtn.innerText = "Sign in";
                 } else {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    
                     messageDiv.style.color = "#10b981";
                     messageDiv.innerText = "성공! 이동 중입니다...";
 
-                    // --- 리다이렉트 분기 로직 ---
-					const urlParams = new URLSearchParams(window.location.search);
-					const redirectTo = urlParams.get('redirect');
+                    // --- GitHub Pages 호환용 리다이렉트 처리 ---
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectTo = urlParams.get('redirect');
 
-					setTimeout(() => {
-						if (redirectTo) {
-							// 딛고 온 페이지가 있으면 안전하게 디코딩 후 앞단에 주소 유효성 처리
-							let targetPage = decodeURIComponent(redirectTo);
-							
-							// 경로 앞에 슬래시가 없다면 붙여서 확실한 루트 경로로 만들어 이동합니다.
-							if (!targetPage.startsWith('/') && !targetPage.startsWith('.')) {
-								targetPage = './' + targetPage;
-							}
-							window.location.href = targetPage;
-						} else {
-							// 파라미터가 없으면 메뉴 선택 화면으로 명확하게 리다이렉트
-							window.location.href = './select_page.html';
-						}
-					}, 800);
+                    setTimeout(() => {
+                        if (redirectTo) {
+                            let target = decodeURIComponent(redirectTo);
+                            // 파일명만 있으면 현재 상대경로 표기법 붙여주기
+                            if (!target.startsWith('/') && !target.startsWith('.')) {
+                                target = './' + target;
+                            }
+                            window.location.href = target;
+                        } else {
+                            window.location.href = './select_page.html';
+                        }
+                    }, 800);
                 }
             } catch (err) {
-                // 네트워크 에러 등 예외 처리
+                console.error(err);
                 messageDiv.style.color = "#ef4444";
-                messageDiv.innerText = "오류가 발생했습니다. 네트워크를 확인해주세요.";
+                messageDiv.innerText = "시스템 오류가 발생했습니다.";
                 loginBtn.disabled = false;
                 loginBtn.innerText = "Sign in";
             }
