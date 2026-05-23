@@ -20,35 +20,44 @@
         }
 
         /**
+         * [기기 체크] 모바일 접속 확인 후 리다이렉트
+         */
+        function checkMobileRedirect() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+            
+            if (isMobile) {
+                window.location.replace('m.select_page.html');
+            }
+        }
+
+        // 인증 체크 전에 모바일 여부를 먼저 확인하여 튕겨내기 처리
+        checkMobileRedirect();
+
+        /**
          * [개선된 분기 로직] 인증 상태 실시간 감지 및 체크
          */
         function initAuthCheck() {
             if (!_supabase) return;
 
-            // Supabase의 세션 상태가 완전히 로드되거나 변경될 때를 감지합니다.
             _supabase.auth.onAuthStateChange((event, session) => {
                 const isLoggedIn = localStorage.getItem('isLoggedIn');
 
-                // INITIAL_SESSION(초기 로드) 또는 SIGNED_IN(로그인됨) 상태일 때 세션이 유효한지 확인
                 if (session && isLoggedIn === 'true') {
-                    // 인증 성공 시 화면 표시
                     document.documentElement.style.display = 'block';
                 } else {
-                    // 세션이 없거나 로그아웃된 상태면 로그인 페이지로 튕겨내기
                     const currentFile = window.location.pathname.split('/').pop() || 'select_page.html';
                     window.location.replace(`index.html?redirect=${encodeURIComponent(currentFile)}`);
                 }
             });
         }
 
-        // DOM이 준비되면 인증 감지 리스너를 실행합니다.
         document.addEventListener('DOMContentLoaded', initAuthCheck);
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap');
         
-        /* 인증 전까지 화면 깜빡임 방지를 위해 전체 숨김 */
         html { display: none; }
 
         body { 
@@ -63,29 +72,26 @@
             overflow-x: hidden;
         }
 
-        /* [수정] 미디어 쿼리를 고려한 반응형 그리드 구조 배치 */
         .container { 
             display: grid; 
-            grid-template-columns: repeat(1, 1fr); /* 모바일 기본: 1열 */
+            grid-template-columns: repeat(1, 1fr);
             gap: 20px; 
             width: 90%; 
             max-width: 1100px; 
-            padding: 60px 0 40px 0; /* 상단 로그아웃 버튼 영역 확보 */
+            padding: 60px 0 60px 0; /* 상하단 버튼 영역 여유 확보 */
             box-sizing: border-box;
         }
 
-        /* 태블릿 환경 가로 폭 대응 (768px 이상일 때 2열 배치) */
         @media (min-width: 768px) {
             .container { grid-template-columns: repeat(2, 1fr); }
         }
 
-        /* 데스크톱 환경 가로 폭 대응 (1024px 이상일 때 원래 디자인인 4열 배치) */
         @media (min-width: 1024px) {
             .container { grid-template-columns: repeat(4, 1fr); }
         }
 
         .card { 
-            height: 340px; /* 미디어 쿼리 밸런스를 위해 높이를 살짝 최적화 */
+            height: 340px; 
             border-radius: 20px; 
             display: flex; 
             flex-direction: column; 
@@ -109,7 +115,6 @@
         
         .icon { font-size: 44px; margin-bottom: 15px; user-select: none; }
         
-        /* 1. 자산관리 (파란색 + 은은한 원형 패턴 배경) */
         .card-blue { 
             background: 
                 radial-gradient(circle at 20% 30%, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.07) 30%, transparent 30%),
@@ -117,7 +122,6 @@
                 linear-gradient(180deg, #0284c7, #0369a1); 
         }
 
-        /* 2. 주식투자 (핑크색 + 격자 격형 패턴 배경) */
         .card-pink { 
             background: 
                 linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%),
@@ -127,7 +131,6 @@
             background-size: 30px 30px, 30px 30px;
         }
 
-        /* 3. 공모주 (주황색 + 사선 스트라이프 패턴 배경) */
         .card-orange { 
             background: 
                 linear-gradient(135deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%, transparent),
@@ -135,14 +138,12 @@
             background-size: 40px 40px;
         }
 
-        /* 4. 예·적금 (녹색 + 대형 사선 유기적 패턴 배경) */
         .card-green { 
             background: 
                 linear-gradient(315deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.04) 40%, transparent 40%),
                 linear-gradient(180deg, #16a34a, #15803d); 
         }
         
-        /* 글자를 감싸는 '입체감 있는 버튼 상자' 디자인 */
         .card h3 {
             width: 80%;
             padding: 12px 0;
@@ -155,7 +156,6 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
 
-        /* 각 카드별 내부 버튼 디자인 밸런스 조정 */
         .card-blue h3   { background: linear-gradient(180deg, #38bdf8, #0284c7); border: 1px solid #0369a1; }
         .card-pink h3   { background: linear-gradient(180deg, #f472b6, #db2777); border: 1px solid #be185d; }
         .card-orange h3 { background: linear-gradient(180deg, #fb923c, #ea580c); border: 1px solid #c2410c; }
@@ -167,9 +167,26 @@
             color: rgba(255, 255, 255, 0.7);
         }
         
-        .logout-link { 
+        /* 우측 상단 Mobile 버튼 */
+        .mobile-link {
             position: absolute; 
             top: 20px; 
+            right: 20px; 
+            color: #888; 
+            text-decoration: none; 
+            font-size: 14px; 
+            transition: color 0.2s, border-color 0.2s;
+            font-weight: 700;
+            padding: 5px 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+        }
+        .mobile-link:hover { color: #fff; border-color: #fff; }
+
+        /* [변경] 우측 하단 고정 Logout 버튼 */
+        .logout-link { 
+            position: fixed; 
+            bottom: 20px; 
             right: 20px; 
             color: #888; 
             text-decoration: none; 
@@ -177,13 +194,14 @@
             transition: color 0.2s;
             font-weight: 700;
             padding: 5px 10px;
+            z-index: 1000;
         }
         .logout-link:hover { color: #fff; }
     </style>
 </head>
 <body>
-    <a href="#" class="logout-link" onclick="logout(event)">Logout</a>
-    
+    <a href="m.select_page.html" class="mobile-link">Mobile</a>
+
     <div class="container">
         <a href="dashboard.html" class="card card-blue">
             <div class="icon">💰</div>
@@ -210,23 +228,19 @@
         </a>
     </div>
 
+    <a href="#" class="logout-link" onclick="logout(event)">Logout</a>
+
     <script>
-        /**
-         * 로그아웃 처리 함수
-         */
         async function logout(e) {
-            if(e) e.preventDefault(); // href="#" 이동 방지
-            
+            if(e) e.preventDefault();
             if (!_supabase) return;
 
             try {
                 await _supabase.auth.signOut();
                 localStorage.removeItem('isLoggedIn');
-                // 뒤로가기 시 다시 선택페이지로 진입하는 현상 차단
                 window.location.replace('index.html');
             } catch (error) {
                 console.error("로그아웃 중 오류 발생:", error.message);
-                // 에러가 나더라도 로컬 로그인 플래그는 밀고 튕겨내기 처리
                 localStorage.removeItem('isLoggedIn');
                 window.location.replace('index.html');
             }
