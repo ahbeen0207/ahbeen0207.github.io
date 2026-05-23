@@ -20,32 +20,29 @@
         }
 
         /**
-         * [분기 로직] 비동기 인증 체크 함수
+         * [개선된 분기 로직] 인증 상태 실시간 감지 및 체크
          */
-        async function checkAuth() {
+        function initAuthCheck() {
             if (!_supabase) return;
-            
-            try {
-                // 세션 정보를 비동기로 확실하게 가져옵니다.
-                const { data: { session } } = await _supabase.auth.getSession();
+
+            // Supabase의 세션 상태가 완전히 로드되거나 변경될 때를 감지합니다.
+            _supabase.auth.onAuthStateChange((event, session) => {
                 const isLoggedIn = localStorage.getItem('isLoggedIn');
 
-                if (!session || isLoggedIn !== 'true') {
-                    const currentFile = window.location.pathname.split('/').pop() || 'select_page.html';
-                    // 인증 실패 시 로그인 페이지로 튕겨내기 (히스토리 누적 방지)
-                    window.location.replace(`index.html?redirect=${encodeURIComponent(currentFile)}`);
-                } else {
-                    // 인증 성공 시 숨겨두었던 HTML 구조를 온전하게 노출
+                // INITIAL_SESSION(초기 로드) 또는 SIGNED_IN(로그인됨) 상태일 때 세션이 유효한지 확인
+                if (session && isLoggedIn === 'true') {
+                    // 인증 성공 시 화면 표시
                     document.documentElement.style.display = 'block';
+                } else {
+                    // 세션이 없거나 로그아웃된 상태면 로그인 페이지로 튕겨내기
+                    const currentFile = window.location.pathname.split('/').pop() || 'select_page.html';
+                    window.location.replace(`index.html?redirect=${encodeURIComponent(currentFile)}`);
                 }
-            } catch (err) {
-                console.error("인증 확인 중 오류 발생:", err);
-                window.location.replace('index.html');
-            }
+            });
         }
 
-        // DOM 콘텐츠가 준비 해제 단계를 마친 후 안전하게 인증 체크 실행
-        document.addEventListener('DOMContentLoaded', checkAuth);
+        // DOM이 준비되면 인증 감지 리스너를 실행합니다.
+        document.addEventListener('DOMContentLoaded', initAuthCheck);
     </script>
 
     <style>
