@@ -2,8 +2,9 @@ name: Monthly Asset Snapshot Cron Job
 
 on:
   schedule:
-    # 한국 시간 매월 1일 오전 10시 자동 실행
-    - cron: '0 1 * 1-12 *'
+    # 한국 시간 매월 1일 오전 01시 자동 실행
+    # 분(0) 시(1) 일(1) 월(*) 요일(*)
+    - cron: '0 1 1 * *'
   workflow_dispatch: # 수동 실행 버튼 활성화
 
 jobs:
