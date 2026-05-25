@@ -20,7 +20,7 @@ jobs:
       - name: 필요한 라이브러리 가상서버에 다운로드
         run: |
           npm init -y
-          npm install @supabase/supabase-js node-fetch
+          npm install @supabase/supabase-js node-fetch@2
           
       - name: 스크립트 실행
         env:
