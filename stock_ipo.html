@@ -204,6 +204,7 @@
 							<select id="chart-owner-select" onchange="updateDashboardStats()" style="background: #111; color: white; border: 1px solid #333; padding: 5px 10px; border-radius: 4px; outline: none; font-size: 13px;">
 								<option value="man" selected>man</option>
 								<option value="been">been</option>
+								<option value="">전체</option>
 							</select>
 						</div>
 						
@@ -493,53 +494,58 @@
          * 선택된 연도 데이터 추출을 기반으로 대시보드 통계판 및 Chart 인스턴스 갱신 함수
          */
         function updateDashboardStats() {
-            const selectedYear = document.getElementById('chart-year-select').value;
+			const selectedYear = document.getElementById('chart-year-select').value;
 			const selectedOwner = document.getElementById('chart-owner-select').value;
-            const monthlyProfits = Array(12).fill(0);
-            let totalYearProfit = 0;
+			const monthlyProfits = Array(12).fill(0);
+			let totalYearProfit = 0;
 
-            currentFilteredData.forEach(item => {
-                if (!item.subscription_date) return;
-                const date = new Date(item.subscription_date);
-                if (date.getFullYear().toString() === selectedYear && item.account_owner === selectedOwner) {
-                    const month = date.getMonth(); 
-                    
-                    const allocatedQty = Number(item.allocated_qty || 0);
-                    const offeringPrice = Number(item.offering_price || 0);
-                    const sellingPrice = Number(item.selling_price || 0);
-                    const taxAndSellFee = Number(item.tax_and_sell_fee || 0);
-                    const subscriptionFee = Number(item.subscription_fee || 0);
-                    const loanInterest = Number(item.loan_interest || 0);
+			currentFilteredData.forEach(item => {
+				if (!item.subscription_date) return;
+				const date = new Date(item.subscription_date);
+				
+				// [수정] selectedOwner가 빈 값('')인 경우 전체 조회가 되도록 조건문 변경
+				const isYearMatch = date.getFullYear().toString() === selectedYear;
+				const isOwnerMatch = !selectedOwner || item.account_owner === selectedOwner;
 
-                    if (sellingPrice > 0) {
-                        const profit = ((sellingPrice - offeringPrice) * allocatedQty) - taxAndSellFee - subscriptionFee - loanInterest;
-                        monthlyProfits[month] += profit;
-                        totalYearProfit += profit;
-                    }
-                }
-            });
+				if (isYearMatch && isOwnerMatch) {
+					const month = date.getMonth(); 
+					
+					const allocatedQty = Number(item.allocated_qty || 0);
+					const offeringPrice = Number(item.offering_price || 0);
+					const sellingPrice = Number(item.selling_price || 0);
+					const taxAndSellFee = Number(item.tax_and_sell_fee || 0);
+					const subscriptionFee = Number(item.subscription_fee || 0);
+					const loanInterest = Number(item.loan_interest || 0);
 
-            // 상단 그리드 월별 이익 매핑 및 색상 제어 흐름
-            for (let i = 1; i <= 12; i++) {
-                const cell = document.getElementById(`m${i}-profit`);
-                if (cell) {
-                    const val = monthlyProfits[i-1];
-                    cell.innerText = val !== 0 ? val.toLocaleString() : '0';
-                    cell.style.color = val > 0 ? 'var(--point-green)' : (val < 0 ? '#e74c3c' : 'var(--vv-text-main)');
-                }
-            }
-            
-            const totalCell = document.getElementById('total-year-profit');
-            totalCell.innerText = totalYearProfit.toLocaleString();
-            totalCell.style.color = totalYearProfit > 0 ? 'var(--point-green)' : (totalYearProfit < 0 ? '#e74c3c' : 'var(--vv-text-main)');
+					if (sellingPrice > 0) {
+						const profit = ((sellingPrice - offeringPrice) * allocatedQty) - taxAndSellFee - subscriptionFee - loanInterest;
+						monthlyProfits[month] += profit;
+						totalYearProfit += profit;
+					}
+				}
+			});
 
-            // Chart 컴포넌트 렌더링 동적 리프레시 명령 시그널 전송
-            if (window.myChart) {
-                window.myChart.data.datasets[0].data = monthlyProfits;
-                window.myChart.update();
-                window.myChart.resize();
-            }
-        }
+			// 상단 그리드 월별 이익 매핑 및 색상 제어 흐름
+			for (let i = 1; i <= 12; i++) {
+				const cell = document.getElementById(`m${i}-profit`);
+				if (cell) {
+					const val = monthlyProfits[i-1];
+					cell.innerText = val !== 0 ? val.toLocaleString() : '0';
+					cell.style.color = val > 0 ? 'var(--point-green)' : (val < 0 ? '#e74c3c' : 'var(--vv-text-main)');
+				}
+			}
+			
+			const totalCell = document.getElementById('total-year-profit');
+			totalCell.innerText = totalYearProfit.toLocaleString();
+			totalCell.style.color = totalYearProfit > 0 ? 'var(--point-green)' : (totalYearProfit < 0 ? '#e74c3c' : 'var(--vv-text-main)');
+
+			// Chart 컴포넌트 렌더링 동적 리프레시 명령 시그널 전송
+			if (window.myChart) {
+				window.myChart.data.datasets[0].data = monthlyProfits;
+				window.myChart.update();
+				window.myChart.resize();
+			}
+		}
 
         /**
          * 페이징 인덱스 인터페이스 렌더링 콤포넌트 생성기
