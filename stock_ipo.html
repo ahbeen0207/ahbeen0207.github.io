@@ -121,11 +121,11 @@
 				<div class="filter-item"><label>주관사</label>
 					<select id="filter-brokerage">
                         <option value="">전체</option>
+                        <option value="NH투자증권">NH투자증권</option>
+                        <option value="미래에셋증권">미래에셋증권</option>
                         <option value="삼성증권">삼성증권</option>
-                        <option value="미래에셋">미래에셋</option>
-                        <option value="NH증권">NH증권</option>
-                        <option value="한국투자">한국투자</option>
-                        <option value="신한증권">신한증권</option>
+                        <option value="한국투자증권">한국투자증권</option>
+                        <option value="대신증권">대신증권</option>
                     </select>
 				</div>
                 <div class="filter-item"><label>공모주명</label><input type="text" id="filter-name"></div>
@@ -202,13 +202,21 @@
 
                 <div style="background: var(--vv-bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--vv-border); flex: 1; display: flex; flex-direction: column;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <select id="chart-year-select" onchange="updateDashboardStats()" style="background: #111; color: white; border: 1px solid #333; padding: 5px 10px; border-radius: 4px; outline: none; font-size: 13px;">
-                            <option value="2026">2026년</option>
-                            <option value="2025">2025년</option>
-                        </select>
-                        <span style="color: var(--vv-text-muted); font-size: 13px; font-weight: bold;">공모주 실시간 자산 현황 그래프</span>
-                        <div style="width: 70px;"></div>
-                    </div>
+						<div style="display: flex; gap: 8px;">
+							<select id="chart-year-select" onchange="updateDashboardStats()" style="background: #111; color: white; border: 1px solid #333; padding: 5px 10px; border-radius: 4px; outline: none; font-size: 13px;">
+								<option value="2026">2026년</option>
+								<option value="2025">2025년</option>
+							</select>
+							<select id="chart-owner-select" onchange="updateDashboardStats()" style="background: #111; color: white; border: 1px solid #333; padding: 5px 10px; border-radius: 4px; outline: none; font-size: 13px;">
+								<option value="man" selected>man</option>
+								<option value="been">been</option>
+							</select>
+						</div>
+						
+						<span style="color: var(--vv-text-muted); font-size: 13px; font-weight: bold;">공모주 실시간 자산 현황 그래프</span>
+						
+						<div style="width: 155px;"></div>
+					</div>
                     <div style="background: var(--vv-bg-card); padding: 10px; flex: 1; min-height: 0;">
                         <canvas id="monthlyChart"></canvas>
                     </div>
@@ -227,20 +235,28 @@
             <input type="hidden" id="form-id">
 
             <div class="form-grid">
-                <div class="form-group"><label>청약자</label>
+                <div class="form-group">
+                    <label>청약자</label>
                     <select id="form-account-owner"><option value="been">been</option><option value="man">man</option></select>
                 </div>
                 <div class="form-group"><label>공모주명</label><input type="text" id="form-stock-name"></div>
                 <div class="form-group"><label>주관사</label><input type="text" id="form-broker"></div>
+                <div class="form-group"><label>공모가</label><input type="text" id="form-offering-price" value="0" oninput="formatNumberInput(this)"></div>
+
                 <div class="form-group"><label>청약일</label><input type="date" id="form-subscription-date"></div>
                 <div class="form-group"><label>환불일</label><input type="date" id="form-refund-date"></div>
                 <div class="form-group"><label>상장일</label><input type="date" id="form-listing-date"></div>
-                <div class="form-group"><label>배정수량</label><input type="number" id="form-allocated-qty" value="0"></div>
-                <div class="form-group"><label>공모가</label><input type="number" id="form-offering-price" value="0"></div>
-                <div class="form-group"><label>매도가</label><input type="number" id="form-selling-price" value="0"></div>
-                <div class="form-group"><label>매도수수료세금</label><input type="number" id="form-tax-fee" value="0"></div>
-                <div class="form-group"><label>증권사수수료</label><input type="number" id="form-sub-fee" value="0"></div>
-                <div class="form-group"><label>대출이자</label><input type="number" id="form-loan-interest" value="0"></div>
+                <div class="form-group"><label>매도일</label><input type="date" id="form-sell-date"></div>
+
+                <div class="form-group"><label>증거금</label><input type="text" id="form-deposit-amount" value="0" oninput="formatNumberInput(this)"></div>
+                <div class="form-group"><label>청약수량</label><input type="text" id="form-subscription-qty" value="0" oninput="formatNumberInput(this)"></div>
+                <div class="form-group"><label>배정수량</label><input type="text" id="form-allocated-qty" value="0" oninput="formatNumberInput(this)"></div>
+                <div class="form-group"><label>증권사수수료</label><input type="text" id="form-sub-fee" value="0" oninput="formatNumberInput(this)"></div>
+
+                <div class="form-group"><label>매도가</label><input type="text" id="form-selling-price" value="0" oninput="formatNumberInput(this)"></div>
+                <div class="form-group"><label>매도수수료</label><input type="text" id="form-tax-fee" value="0" oninput="formatNumberInput(this)"></div>
+                <div class="form-group"><label>대출이자</label><input type="text" id="form-loan-interest" value="0" oninput="formatNumberInput(this)"></div>
+                <div class="form-group" style="visibility: hidden;"><label>공백</label><input type="text"></div>
             </div>
             <div class="modal-footer">
                 <button id="btn-delete-ipo" class="btn" style="background:#e74c3c; margin-right: auto; display: none;" onclick="deleteIpoInvestment()">삭제</button>
@@ -254,13 +270,50 @@
         // =========================================================================
         // 1. Supabase 연동 클라이언트 및 글로벌 변수 선언 영역
         // =========================================================================
-		const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
+        const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l'; 
         
         const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         const PAGE_SIZE = 15;          // 데이터 그리드 테이블 출력 단위 행 개수
         let currentFilteredData = [];  // 통계판 연동에 활용되는 전체 데이터 백업 스토리지 배열
+
+        /**
+         * 실시간 입력창 천 단위 콤마 포맷팅 헬퍼 함수
+         * @param {HTMLElement} el - input 요소 변수
+         */
+        function formatNumberInput(el) {
+            // 숫자만 남기기
+            let value = el.value.replace(/[^0-9]/g, '');
+            if (!value || value === '0') {
+                el.value = '0';
+                return;
+            }
+            // 천 단위 콤마 추가
+            el.value = Number(value).toLocaleString();
+        }
+
+        /**
+         * 포맷터 적용 값을 일반 숫자로 환원해주는 헬퍼 함수
+         * @param {string} id - 엘리먼트 아이디값
+         */
+        function getRawNumberValue(id) {
+            const val = document.getElementById(id).value;
+            return parseFloat(val.replace(/,/g, '')) || 0;
+        }
+
+        /**
+         * 일반 숫자를 포맷된 스트링으로 주입해주는 헬퍼 함수
+         * @param {string} id - 엘리먼트 아이디값
+         * @param {number} num - 주입할 숫자값
+         */
+        function setFormattedNumberValue(id, num) {
+            const target = document.getElementById(id);
+            if (target) {
+                const val = Number(num || 0);
+                target.value = val.toLocaleString();
+            }
+        }
 
         /**
          * 화면단 서브메뉴 전환 처리기 함수
@@ -377,7 +430,7 @@
 
                     // Object 구조체를 가공하기 위해 안전하게 이스케이프 포맷 변환 인코딩
                     const itemJson = encodeURIComponent(JSON.stringify(item));
-					
+                    
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${item.account_owner}</td>
@@ -387,8 +440,8 @@
                             ${item.stock_name}
                         </td>
                         <td>${item.broker}</td>
-                        <td>${item.subscription_date}</td>
-                        <td>${item.listing_date}</td>
+                        <td>${item.subscription_date || '-'}</td>
+                        <td>${item.listing_date || '-'}</td>
                         <td>${allocatedQty.toLocaleString()}</td>
                         <td>${offeringPrice.toLocaleString()}</td>
                         <td>${sellingPrice > 0 ? sellingPrice.toLocaleString() : '-'}</td>
@@ -432,13 +485,14 @@
          */
         function updateDashboardStats() {
             const selectedYear = document.getElementById('chart-year-select').value;
+			const selectedOwner = document.getElementById('chart-owner-select').value;
             const monthlyProfits = Array(12).fill(0);
             let totalYearProfit = 0;
 
             currentFilteredData.forEach(item => {
                 if (!item.subscription_date) return;
                 const date = new Date(item.subscription_date);
-                if (date.getFullYear().toString() === selectedYear) {
+                if (date.getFullYear().toString() === selectedYear && item.account_owner === selectedOwner) {
                     const month = date.getMonth(); 
                     
                     const allocatedQty = Number(item.allocated_qty || 0);
@@ -516,29 +570,35 @@
         // =========================================================================
         
         /**
-         * 신규 생성 폼 데이터 노드 입력창 오픈 함수
+         * 신규 생성 폼 데이터 노드 입력창 오픈 함수 (콤마 반영 형식 변경)
          */
         function openRegisterModal() {
             document.getElementById('form-id').value = '';
             document.getElementById('form-stock-name').value = '';
             document.getElementById('form-broker').value = '';
+            
             document.getElementById('form-subscription-date').value = '';
             document.getElementById('form-refund-date').value = '';
             document.getElementById('form-listing-date').value = '';
-            document.getElementById('form-allocated-qty').value = 0;
-            document.getElementById('form-offering-price').value = 0;
-            document.getElementById('form-selling-price').value = 0;
-            document.getElementById('form-tax-fee').value = 0;
-            document.getElementById('form-sub-fee').value = 0;
-            document.getElementById('form-loan-interest').value = 0;
+            document.getElementById('form-sell-date').value = '';
+            
+            // 콤마 형식 도우미 적용 주입
+            setFormattedNumberValue('form-offering-price', 0);
+            setFormattedNumberValue('form-deposit-amount', 0);
+            setFormattedNumberValue('form-subscription-qty', 0);
+            setFormattedNumberValue('form-allocated-qty', 0);
+            setFormattedNumberValue('form-sub-fee', 0);
+            setFormattedNumberValue('form-selling-price', 0);
+            setFormattedNumberValue('form-tax-fee', 0);
+            setFormattedNumberValue('form-loan-interest', 0);
             
             document.getElementById('modal-title').innerText = "공모주 투자내역 등록";
             document.getElementById('btn-delete-ipo').style.display = 'none'; 
             document.getElementById('register-modal').style.display = 'block';
         }
-		
-		/**
-         * 수정 액션을 위한 데이터 역바인딩 및 모달 필드 동적 활성화 함수
+        
+        /**
+         * 수정 액션을 위한 데이터 역바인딩 및 모달 필드 동적 활성화 함수 (콤마 반영 형식 변경)
          * @param {string} itemJsonStr - 역직렬화 대상 로우 정보 텍스트 스트링
          */
         function openEditModal(itemJsonStr) {
@@ -548,15 +608,21 @@
             document.getElementById('form-account-owner').value = item.account_owner;
             document.getElementById('form-stock-name').value = item.stock_name;
             document.getElementById('form-broker').value = item.broker;
-            document.getElementById('form-subscription-date').value = item.subscription_date;
-            document.getElementById('form-refund-date').value = item.refund_date;
-            document.getElementById('form-listing-date').value = item.listing_date;
-            document.getElementById('form-allocated-qty').value = item.allocated_qty;
-            document.getElementById('form-offering-price').value = item.offering_price;
-            document.getElementById('form-selling-price').value = item.selling_price || 0;
-            document.getElementById('form-tax-fee').value = item.tax_and_sell_fee;
-            document.getElementById('form-sub-fee').value = item.subscription_fee;
-            document.getElementById('form-loan-interest').value = item.loan_interest;
+            
+            document.getElementById('form-subscription-date').value = item.subscription_date || '';
+            document.getElementById('form-refund-date').value = item.refund_date || '';
+            document.getElementById('form-listing-date').value = item.listing_date || '';
+            document.getElementById('form-sell-date').value = item.sell_date || '';
+            
+            // 콤마 형식 도우미 적용 주입
+            setFormattedNumberValue('form-offering-price', item.offering_price);
+            setFormattedNumberValue('form-deposit-amount', item.deposit_amount);
+            setFormattedNumberValue('form-subscription-qty', item.subscription_qty);
+            setFormattedNumberValue('form-allocated-qty', item.allocated_qty);
+            setFormattedNumberValue('form-sub-fee', item.subscription_fee);
+            setFormattedNumberValue('form-selling-price', item.selling_price);
+            setFormattedNumberValue('form-tax-fee', item.tax_and_sell_fee);
+            setFormattedNumberValue('form-loan-interest', item.loan_interest);
             
             document.getElementById('modal-title').innerText = "공모주 투자내역 수정";
             document.getElementById('btn-delete-ipo').style.display = 'block'; 
@@ -577,29 +643,35 @@
             try {
                 const id = document.getElementById('form-id').value; 
 
+                // 콤마가 제거된 실숫값을 정제 추출하는 헬퍼 가동
                 const record = {
                     account_owner: document.getElementById('form-account-owner').value,
                     stock_name: document.getElementById('form-stock-name').value,
                     broker: document.getElementById('form-broker').value,
-                    subscription_date: document.getElementById('form-subscription-date').value,
-                    refund_date: document.getElementById('form-refund-date').value,
-                    listing_date: document.getElementById('form-listing-date').value,
-                    allocated_qty: parseInt(document.getElementById('form-allocated-qty').value) || 0,
-                    offering_price: parseFloat(document.getElementById('form-offering-price').value) || 0,
-                    selling_price: parseFloat(document.getElementById('form-selling-price').value) || 0,
-                    tax_and_sell_fee: parseFloat(document.getElementById('form-tax-fee').value) || 0,
-                    subscription_fee: parseFloat(document.getElementById('form-sub-fee').value) || 0,
-                    loan_interest: parseFloat(document.getElementById('form-loan-interest').value) || 0
+                    offering_price: getRawNumberValue('form-offering-price'),
+                    
+                    subscription_date: document.getElementById('form-subscription-date').value || null,
+                    refund_date: document.getElementById('form-refund-date').value || null,
+                    listing_date: document.getElementById('form-listing-date').value || null,
+                    sell_date: document.getElementById('form-sell-date').value || null,
+                    
+                    deposit_amount: getRawNumberValue('form-deposit-amount'),
+                    subscription_qty: parseInt(getRawNumberValue('form-subscription-qty')) || 0,
+                    allocated_qty: parseInt(getRawNumberValue('form-allocated-qty')) || 0,
+                    subscription_fee: getRawNumberValue('form-sub-fee'),
+                    
+                    selling_price: getRawNumberValue('form-selling-price'),
+                    tax_and_sell_fee: getRawNumberValue('form-tax-fee'),
+                    loan_interest: getRawNumberValue('form-loan-interest')
                 };
 
                 if (!record.stock_name || !record.broker || !record.subscription_date || !record.refund_date || !record.listing_date) {
-                    alert("공모주명, 주관사 및 주요 일정 날짜 정보는 필수 입력값입니다.");
+                    alert("공모주명, 주관사 및 주요 일정 날짜 정보(청약/환불/상장일)는 필수 입력값입니다.");
                     return;
                 }
 
                 let result;
                 if (id) {
-                    // 고유 키(id)가 존재하므로 기존 리소스 데이터 대상 Update 쿼리 가동
                     result = await clientSupabase
                         .from('tb_ipo_investment')
                         .update(record)
@@ -608,7 +680,6 @@
                     if (result.error) throw result.error;
                     alert("공모주 투자 데이터가 성공적으로 수정되었습니다.");
                 } else {
-                    // 신규 리소스 등록 생성을 위해 Insert 데이터 처리 수행
                     result = await clientSupabase
                         .from('tb_ipo_investment')
                         .insert([record]);
@@ -625,8 +696,8 @@
                 alert("저장 중 오류가 발생했습니다: " + err.message);
             }
         }
-		
-		/**
+        
+        /**
          * 타겟 레코드 완전 파기 삭제 트랜잭션 쿼리 수행 함수
          */
         async function deleteIpoInvestment() {
