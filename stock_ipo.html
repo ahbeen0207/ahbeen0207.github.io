@@ -118,16 +118,9 @@
                         <option value="man">man</option>
                     </select>
                 </div>
-				<div class="filter-item"><label>주관사</label>
-					<select id="filter-brokerage">
-                        <option value="">전체</option>
-                        <option value="NH투자증권">NH투자증권</option>
-                        <option value="미래에셋증권">미래에셋증권</option>
-						<option value="신한투자증권">신한투자증권</option>
-                        <option value="삼성증권">삼성증권</option>
-                        <option value="한국투자증권">한국투자증권</option>
-                        <option value="대신증권">대신증권</option>
-                    </select>
+				<div class="filter-item">
+					<label>주관사</label>
+					<input type="text" id="filter-brokerage" placeholder="주관사명 입력" onkeyup="if(window.event.keyCode==13){fetchIpoHistory(1)}">
 				</div>
                 <div class="filter-item"><label>공모주명</label><input type="text" id="filter-name"></div>
                 <div class="button-group">
@@ -331,6 +324,20 @@
                 mainTrade.style.display = 'none';
                 btnStatus.classList.add('active');
                 btnTrade.classList.remove('active');
+                
+                // [수정 사항] 거래내역 메뉴 진입 시 상단 검색 필터 조건 입력값 초기화
+                const filterDate = document.getElementById('filter-date');
+                if (filterDate) {
+                    filterDate.value = '';
+                    filterDate.type = 'text'; // month 타입에서 원복
+                }
+                document.getElementById('filter-owner').value = '';
+                document.getElementById('filter-brokerage').value = '';
+                document.getElementById('filter-name').value = '';
+                
+                // 초기화된 필터 상태를 기준으로 1페이지 목록 리로드
+                fetchIpoHistory(1);
+                
             } else if (viewName === 'trade') {
                 mainStatus.style.display = 'none';
                 mainTrade.style.display = 'flex';
@@ -365,15 +372,16 @@
                     .select('*', { count: 'exact' });
 
                 // 동적 파라미터 필터링 인젝션 처리
-                if (filterOwner) {
-                    query = query.eq('account_owner', filterOwner);
-                }
-                if (filterBrokerage) {
-                    query = query.eq('broker', filterBrokerage);
-                }
-                if (filterName) {
-                    query = query.ilike('stock_name', `%${filterName}%`);
-                }
+				if (filterOwner) {
+					query = query.eq('account_owner', filterOwner);
+				}
+				if (filterBrokerage) {
+					// eq(일치)에서 ilike(포함 검색) 조건으로 변경
+					query = query.ilike('broker', `%${filterBrokerage}%`);
+				}
+				if (filterName) {
+					query = query.ilike('stock_name', `%${filterName}%`);
+				}
                 // 월 경계선 조회 시 발생하는 오류를 수정한 다음 달 01일 미만(<) 처리 조건 로직
                 if (filterDate) {
                     const [year, month] = filterDate.split('-');
