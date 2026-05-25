@@ -1,23 +1,19 @@
 // update-script.js
-
-// 💡 1. 상단의 중복되고 잘못된 import 문을 지우고 Clean하게 require 구조로 통일합니다.
 const { createClient } = require('@supabase/supabase-js');
+const fetch = require('node-fetch'); // node-fetch@2 버전을 사용하여 깔끔하게 require
 
-// 2. 기존 GitHub Secrets 명칭과 완벽하게 일치하도록 환경 변수 세팅
+// 환경 변수 세팅
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const MY_USER_ID = process.env.MY_USER_ID;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
 
-// 3. 관리자 권한 클라이언트 생성
+// 관리자 권한 클라이언트 생성
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function runAutomation() {
     try {
         console.log("🚀 1단계: GAS로부터 실시간 주가(구글파이낸스) 데이터 조회 중...");
-        
-        // 💡 node-fetch 버전 충돌 우회용 동적 임포트 적용
-        const { default: fetch } = await import('node-fetch');
         
         const gasRes = await fetch(`${GAS_URL}?t=${new Date().getTime()}`);
         const gasJson = await gasRes.json();
@@ -37,7 +33,6 @@ async function runAutomation() {
 
         console.log("🚀 3단계: 종목별 잔고 및 자산 총액 실시간 계산 중...");
         
-        // 종목별 잔고 취합 맵 생성
         const stockMap = {};
         (trades || []).forEach(trade => {
             const key = trade.stock_code || trade.stock_name;
@@ -68,12 +63,11 @@ async function runAutomation() {
 
         let stockSum = 0, bondSum = 0, goldSum = 0, cashSum = 0;
         const stockStatusRows = [];
-        const currentTime = new Date().toISOString(); // 현재 수정 시간 기록용
+        const currentTime = new Date().toISOString(); 
 
-        // 잔고가 있는 종목들에 대해 실시간 가격 매칭 및 손익 정산
         Object.values(stockMap).filter(s => s.balance > 0).forEach(s => {
             const avgPrice = s.total_cost / s.balance;
-            let livePrice = avgPrice; // GAS 시세가 없을 경우 매수평단가를 기본값으로 방어
+            let livePrice = avgPrice; 
 
             if (s.stock_code && cachedGasData[s.stock_code]) {
                 let gPrice = cachedGasData[s.stock_code].price || 0;
@@ -88,7 +82,6 @@ async function runAutomation() {
             else if (s.asset_type === '채권') bondSum += evalAmount;
             else if (s.asset_type === '금은') goldSum += evalAmount;
 
-            // 종목별 실시간 현황 테이블용 데이터 배열에 적재
             stockStatusRows.push({
                 user_id: MY_USER_ID,
                 asset_type: s.asset_type,
@@ -105,14 +98,13 @@ async function runAutomation() {
             });
         });
 
-        // 현금성 자산 합산
         (deposits || []).forEach(d => {
             cashSum += parseFloat(d.total_amount) || 0;
         });
 
         const totalSum = stockSum + bondSum + goldSum + cashSum;
 
-        console.log("🚀 4단계: Supabase `tb_realtime_stock_status` (종목별현황) 테이블 적재...");
+        console.log("🚀 4단계: Supabase `tb_realtime_stock_status` 테이블 적재...");
         if (stockStatusRows.length > 0) {
             const { error: stockUpsertError } = await supabase
                 .from('tb_realtime_stock_status')
@@ -121,7 +113,7 @@ async function runAutomation() {
             console.log(`✅ 보유 종목 ${stockStatusRows.length}건 실시간 동기화 완료!`);
         }
 
-        console.log("🚀 5단계: Supabase `tb_realtime_asset_summary` (자산현황) 테이블 적재...");
+        console.log("🚀 5단계: Supabase `tb_realtime_asset_summary` 테이블 적재...");
         const { error: assetUpsertError } = await supabase
             .from('tb_realtime_asset_summary')
             .upsert({
