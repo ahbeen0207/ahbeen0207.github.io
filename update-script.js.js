@@ -1,18 +1,22 @@
-import { createClient } from '@supabase/supabase-js';
-import fetch from 'node-fetch';
+// update-script.js
+const { createClient } = require('@supabase/supabase-js');
 
-// 1. 환경 변수(GitHub Secrets)로부터 설정 값 주입
+// 1. 기존 GitHub Secrets 명칭과 완벽하게 일치하도록 환경 변수 수정
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // ◀ 수정완료
 const MY_USER_ID = process.env.MY_USER_ID;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
 
-// 2. service_role 키를 사용하여 RLS를 우회하는 마스터 클라이언트 생성
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+// 2. 관리자 권한 클라이언트 생성
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function runAutomation() {
     try {
-        console.log("🚀 1단계: Google Apps Script(GAS)로부터 실시간 시세 조회 중...");
+        console.log("🚀 1단계: GAS로부터 실시간 주가(구글파이낸스) 데이터 조회 중...");
+        
+        // 💡 기존 cron_snapshot.js에서 검증된 node-fetch 버전 충돌 우회용 동적 임포트 적용
+        const { default: fetch } = await import('node-fetch');
+        
         const gasRes = await fetch(`${GAS_URL}?t=${new Date().getTime()}`);
         const gasJson = await gasRes.json();
         
@@ -20,25 +24,29 @@ async function runAutomation() {
             throw new Error("GAS로부터 유효한 시세 데이터를 받지 못했습니다.");
         }
         const cachedGasData = gasJson.stockPrices;
-        console.log("✅ GAS 시세 로드 성공!");
+        console.log("✅ GAS 시세 받아오기 성공!");
 
-        console.log("🚀 2단계: Supabase 원천 데이터(거래 내역 및 예적금) 가져오는 중...");
-        
-        // RLS 무시 권한이므로 전체를 긁어온 뒤 내 user_id 데이터만 필터링하여 계산합니다.
+        console.log("🚀 2단계: Supabase에서 거래 내역(`tb_stock_trade`) 및 예적금 가져오는 중...");
         const { data: trades, error: tradeError } = await supabase.from('tb_stock_trade').select('*').eq('user_id', MY_USER_ID);
         if (tradeError) throw tradeError;
 
         const { data: deposits, error: depositError } = await supabase.from('deposit_management').select('total_amount').eq('user_id', MY_USER_ID).eq('status', '유지');
         if (depositError) throw depositError;
 
-        console.log("🚀 3단계: 대시보드 로직 기반 실시간 가치 정산 알고리즘 가동...");
+        console.log("🚀 3단계: 종목별 잔고 및 자산 총액 실시간 계산 중...");
         
-        // 주식/채권/금은 잔고 정산
+        // 종목별 잔고 취합 맵 생성
         const stockMap = {};
         (trades || []).forEach(trade => {
             const key = trade.stock_code || trade.stock_name;
             if (!stockMap[key]) {
-                stockMap[key] = { asset_type: trade.asset_type, stock_code: trade.stock_code, balance: 0, total_cost: 0 };
+                stockMap[key] = { 
+                    asset_type: trade.asset_type, 
+                    stock_name: trade.stock_name, 
+                    stock_code: trade.stock_code || trade.stock_name, 
+                    balance: 0, 
+                    total_cost: 0 
+                };
             }
             const s = stockMap[key];
             const qty = parseFloat(trade.quantity) || 0;
@@ -57,22 +65,42 @@ async function runAutomation() {
         });
 
         let stockSum = 0, bondSum = 0, goldSum = 0, cashSum = 0;
+        const stockStatusRows = [];
+        const currentTime = new Date().toISOString(); // 현재 수정 시간 기록용
 
-        // 실시간 주가 매칭 계산
+        // 잔고가 있는 종목들에 대해 실시간 가격 매칭 및 손익 정산
         Object.values(stockMap).filter(s => s.balance > 0).forEach(s => {
             const avgPrice = s.total_cost / s.balance;
-            let livePrice = avgPrice; // Fallback 기본값
+            let livePrice = avgPrice; // GAS 시세가 없을 경우 매수평단가를 기본값으로 방어
 
             if (s.stock_code && cachedGasData[s.stock_code]) {
                 let gPrice = cachedGasData[s.stock_code].price || 0;
                 if (gPrice > 0) livePrice = gPrice;
             }
             
-            const liveCurrentKrw = s.balance * livePrice;
+            const evalAmount = s.balance * livePrice;
+            const profitLoss = evalAmount - s.total_cost;
+            const returnRate = s.total_cost > 0 ? (profitLoss / s.total_cost) * 100 : 0;
 
-            if (s.asset_type === '주식') stockSum += liveCurrentKrw;
-            else if (s.asset_type === '채권') bondSum += liveCurrentKrw;
-            else if (s.asset_type === '금은') goldSum += liveCurrentKrw;
+            if (s.asset_type === '주식') stockSum += evalAmount;
+            else if (s.asset_type === '채권') bondSum += evalAmount;
+            else if (s.asset_type === '금은') goldSum += evalAmount;
+
+            // 종목별 실시간 현황 테이블용 데이터 배열에 적재
+            stockStatusRows.push({
+                user_id: MY_USER_ID,
+                asset_type: s.asset_type,
+                stock_name: s.stock_name,
+                stock_code: s.stock_code,
+                balance: s.balance,
+                avg_price: Math.round(avgPrice * 100) / 100,
+                total_cost: Math.floor(s.total_cost),
+                live_price: Math.floor(livePrice),
+                eval_amount: Math.floor(evalAmount),
+                profit_loss: Math.floor(profitLoss),
+                return_rate: Math.round(returnRate * 100) / 100,
+                updated_at: currentTime
+            });
         });
 
         // 현금성 자산 합산
@@ -81,43 +109,35 @@ async function runAutomation() {
         });
 
         const totalSum = stockSum + bondSum + goldSum + cashSum;
-        
-        // 현재 연-월 구하기 (예: 2026-05)
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const snapshotMonth = `${year}-${month}`;
 
-        console.log(`📊 계산된 자산 요약 (${snapshotMonth}):`);
-        console.log(`- 총자산: ${Math.floor(totalSum).toLocaleString()} 원`);
-        console.log(`- 주식: ${Math.floor(stockSum).toLocaleString()} 원`);
-        console.log(`- 채권: ${Math.floor(bondSum).toLocaleString()} 원`);
-        console.log(`- 현금: ${Math.floor(cashSum).toLocaleString()} 원`);
-        console.log(`- 금은: ${Math.floor(goldSum).toLocaleString()} 원`);
+        console.log("🚀 4단계: Supabase `tb_realtime_stock_status` (종목별현황) 테이블 적재...");
+        if (stockStatusRows.length > 0) {
+            const { error: stockUpsertError } = await supabase
+                .from('tb_realtime_stock_status')
+                .upsert(stockStatusRows, { onConflict: 'user_id,stock_code' });
+            if (stockUpsertError) throw stockUpsertError;
+            console.log(`✅ 보유 종목 ${stockStatusRows.length}건 실시간 동기화 완료!`);
+        }
 
-        console.log("🚀 4단계: Supabase 'tb_monthly_snapshot' 테이블에 데이터 적재 중...");
-
-        // 스냅샷 데이터 Upsert 처리 (user_id와 snapshot_month 기반 고유 체크 설정 필요)
-        const { data, error: upsertError } = await supabase
-            .from('tb_monthly_snapshot')
+        console.log("🚀 5단계: Supabase `tb_realtime_asset_summary` (자산현황) 테이블 적재...");
+        const { error: assetUpsertError } = await supabase
+            .from('tb_realtime_asset_summary')
             .upsert({
                 user_id: MY_USER_ID,
-                snapshot_month: snapshotMonth,
-                total_sum: Math.floor(totalSum),
                 stock_sum: Math.floor(stockSum),
                 bond_sum: Math.floor(bondSum),
                 cash_sum: Math.floor(cashSum),
-                gold_sum: Math.floor(goldSum)
-            }, {
-                onConflict: 'user_id,snapshot_month' // 중복 발생 시 업데이트 치도록 유도
-            });
-
-        if (upsertError) throw upsertError;
-
-        console.log("✨ [성공] 10분 주기 스냅샷 동기화가 완벽하게 완료되었습니다!");
+                gold_sum: Math.floor(goldSum),
+                total_sum: Math.floor(totalSum),
+                updated_at: currentTime
+            }, { onConflict: 'user_id' });
+            
+        if (assetUpsertError) throw assetUpsertError;
+        console.log("✅ 전체 자산 총액 요약 실시간 업데이트 완료!");
+        console.log(`✨ 최종 동기화 시간: ${new Date(currentTime).toLocaleString()}`);
 
     } catch (error) {
-        console.error("❌ [실패] 크론 스크립트 실행 중 치명적 오류 발생:", error.message);
+        console.error("❌ [크론 실패] 오류 발생:", error.message);
         process.exit(1);
     }
 }
