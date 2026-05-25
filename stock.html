@@ -220,7 +220,6 @@
                 
                 <div class="button-group status-btn-group">
                     <button class="btn btn-blue status-fixed-btn" onclick="renderStatusTable()">검색</button>
-                    <button class="btn btn-indigo status-fixed-btn" onclick="refreshStatusDashboard()">새로고침</button>
                 </div>
             </div>
 
@@ -483,12 +482,17 @@
                 const safeTrades = trades || [];
                 const stockMap = {};
 
-                // 복합 원천 데이터를 종목 단위 맵(Group By) 구조로 재압축
+                // 복합 원천 데이터를 종목/증권사/계좌 단위 맵(Group By) 구조로 재압축
                 safeTrades.forEach(trade => {
-                    const key = trade.stock_code || trade.stock_name;
+                    // 동일 종목이라도 증권사와 계좌가 다르면 분리하여 계산하도록 키 생성
+                    const tickerKey = trade.stock_code || trade.stock_name;
+                    const key = `${tickerKey}_${trade.brokerage_name}_${trade.account_type}`;
+                    
                     if (!stockMap[key]) {
                         stockMap[key] = {
                             market_type: trade.market_type,
+                            brokerage_name: trade.brokerage_name, // 필터링을 위해 추가
+                            account_type: trade.account_type,     // 필터링을 위해 추가
                             asset_type: trade.asset_type,
                             stock_name: trade.stock_name,
                             stock_code: trade.stock_code,
@@ -557,6 +561,8 @@
             // 마스터 배열에서 선택한 조건과 부합하는 행만 정밀 스크리닝
             const filtered = globalActiveStocks.filter(s => {
                 if (fMarket && s.market_type !== fMarket) return false;
+                if (fBrokerage && s.brokerage_name !== fBrokerage) return false; // 증권사 필터 적용
+                if (fAccount && s.account_type !== fAccount) return false;     // 계좌 필터 적용
                 if (fAsset && s.asset_type !== fAsset) return false;
                 if (fName && !s.stock_name.toLowerCase().includes(fName)) return false;
                 return true;
@@ -603,7 +609,7 @@
             });
             statusBody.innerHTML = html;
 
-            // [보완 완료] 상단 요약판 금액 연산을 전체 데이터 기준이 아닌 필터링된 결과물(`filtered`) 기준으로 재정비
+            // 상단 요약판 금액 연산을 전체 데이터 기준이 아닌 필터링된 결과물(`filtered`) 기준으로 재정비
             let totalCostSum = 0;       
             let totalCurrentSum = 0;    
 
