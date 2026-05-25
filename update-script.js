@@ -1,20 +1,22 @@
 // update-script.js
+
+// 💡 1. 상단의 중복되고 잘못된 import 문을 지우고 Clean하게 require 구조로 통일합니다.
 const { createClient } = require('@supabase/supabase-js');
 
-// 1. 기존 GitHub Secrets 명칭과 완벽하게 일치하도록 환경 변수 수정
+// 2. 기존 GitHub Secrets 명칭과 완벽하게 일치하도록 환경 변수 세팅
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // ◀ 수정완료
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const MY_USER_ID = process.env.MY_USER_ID;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
 
-// 2. 관리자 권한 클라이언트 생성
+// 3. 관리자 권한 클라이언트 생성
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function runAutomation() {
     try {
         console.log("🚀 1단계: GAS로부터 실시간 주가(구글파이낸스) 데이터 조회 중...");
         
-        // 💡 기존 cron_snapshot.js에서 검증된 node-fetch 버전 충돌 우회용 동적 임포트 적용
+        // 💡 node-fetch 버전 충돌 우회용 동적 임포트 적용
         const { default: fetch } = await import('node-fetch');
         
         const gasRes = await fetch(`${GAS_URL}?t=${new Date().getTime()}`);
