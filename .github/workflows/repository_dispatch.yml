@@ -2,8 +2,13 @@ name: 10-Minute Realtime Asset Update Cron
 
 on:
   repository_dispatch:
-    types: [run-sync-asset] # ◀ GAS가 호출할 이벤트 이름 (정확히 일치해야 함)
-  workflow_dispatch: # 수동 실행 버튼도 유지
+    types: [run-sync-asset]
+  workflow_dispatch:
+
+# ─── 💡 [이 부분 3줄을 추가해 주세요] ───
+permissions:
+  contents: read # 가상 서버가 소스코드를 읽을 수 있도록 권한 부여
+# ───────────────────────────────────────
 
 jobs:
   update-realtime-data:
