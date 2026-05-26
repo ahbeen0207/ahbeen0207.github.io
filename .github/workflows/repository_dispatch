@@ -1,0 +1,30 @@
+name: 10-Minute Realtime Asset Update Cron
+
+on:
+  repository_dispatch:
+    types: [run-sync-asset] # ◀ GAS가 호출할 이벤트 이름 (정확히 일치해야 함)
+  workflow_dispatch: # 수동 실행 버튼도 유지
+
+jobs:
+  update-realtime-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 노드JS 최신 환경 세팅
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          
+      - name: 필요한 라이브러리 가상서버에 다운로드
+        run: |
+          npm init -y
+          npm install @supabase/supabase-js node-fetch@2
+          
+      - name: 스크립트 실행
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MY_USER_ID: ${{ secrets.MY_USER_ID }}
+        run: node update-script.js
