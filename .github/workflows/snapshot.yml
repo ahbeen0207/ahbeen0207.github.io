@@ -1,11 +1,12 @@
 name: Monthly Asset Snapshot Cron Job
 
 on:
-  schedule:
-    # 한국 시간 매월 1일 오전 01시 자동 실행
-    # 분(0) 시(1) 일(1) 월(*) 요일(*)
-    - cron: '0 1 1 * *'
+  repository_dispatch:
+    types: [run-monthly-snapshot] # ◀ GAS가 매월 1일에 호출할 이벤트 이름
   workflow_dispatch: # 수동 실행 버튼 활성화
+
+permissions:
+  contents: read # 소스코드 체크아웃을 위한 권한 명시
 
 jobs:
   run-snapshot-job:
@@ -17,7 +18,7 @@ jobs:
       - name: 노드JS 최신 환경 세팅
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # 기존 20에서 22로 버전을 변경합니다.
+          node-version: '22'
 
       - name: 필요한 라이브러리 가상서버에 다운로드
         run: |
