@@ -71,10 +71,12 @@
 
         /* 대시보드 메인 그리드 및 필터 영역 */
         main { flex: 1; border: 1px solid var(--vv-border); border-radius: 12px; background-color: var(--vv-bg-card); padding: 24px; display: flex; flex-direction: column; overflow: hidden; }
-        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 15px; background: var(--vv-bg-main); padding: 15px 20px; border-radius: 8px; border: 1px solid var(--vv-border); margin-bottom: 20px; }
-        .filter-item { display: flex; align-items: center; gap: 8px; }
+        
+        /* 한 줄 정렬을 위한 간격(gap) 최적화 및 좌우 균등 분배 적용 */
+        .filter-container { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 14px; background: var(--vv-bg-main); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--vv-border); margin-bottom: 20px; overflow-x: auto; }
+        .filter-item { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
         .filter-item label { color: var(--vv-text-mint); font-size: 13px; white-space: nowrap; }
-        .filter-item input, .filter-item select { background: var(--vv-bg-card); border: 1px solid var(--vv-border); color: white; padding: 6px 10px; border-radius: 4px; font-size: 13px;}
+        .filter-item input, .filter-item select { background: var(--vv-bg-card); border: 1px solid var(--vv-border); color: white; padding: 6px 8px; border-radius: 4px; font-size: 13px;}
         
         /* 상단 금액 현황판 레이아웃 정의 */
         .filter-container .status-summary-group {
@@ -82,7 +84,8 @@
             align-items: center;
             gap: 8px;
             margin-left: 0px !important; 
-            margin-right: 15px !important;
+            margin-right: 5px !important;
+            flex-shrink: 0;
         }
 
         .filter-container input[type="text"].status-summary-input {
@@ -100,22 +103,37 @@
         }
 
         /* 현황판 인풋 박스 너비 세부 조절 */
-        .filter-container input[type="text"]#status-total-invest { width: 135px !important; }
-        .filter-container input[type="text"]#status-total-profit { width: 185px !important; }
-        .filter-container .status-summary-input.total-invest-val { color: var(--point-green) !important; }
+		.filter-container input[type="text"]#status-total-invest { width: 125px !important; }
+		/* 수익률 및 수익금액 데이터가 잘리지 않도록 크기 확장 (175px -> 210px) */
+		.filter-container input[type="text"]#status-total-profit { width: 210px !important; }
+
+		/* 업데이트 시간 박스: 년도 제거에 맞춰 너비를 100px로 최적화 */
+		.filter-container input[type="text"]#status-last-updated { 
+			width: 100px !important; 
+			color: var(--point-blue) !important; 
+			padding: 0 4px !important; 
+		}
+		.filter-container .status-summary-input.total-invest-val { color: var(--point-green) !important; }
 		
-        #status-filter-box { gap: 8px !important; }
-        #status-filter-box select { width: 95px !important; }
-        #status-filter-box input[type="text"]#status-filter-name { width: 120px !important; }
+        /* [최종 수정] 종목별 현황 필터 영역: 수평 개체 간격 미세 축소 및 한 줄 정렬 최적화 */
+        #status-filter-box { gap: 10px !important; } 
+        #status-filter-box select { width: 80px !important; } 
+        #status-filter-box select#status-filter-account { width: 110px !important; } 
+        #status-filter-box input[type="text"]#status-filter-name { width: 110px !important; } /* 가로 스크롤 방지를 위해 140px에서 110px로 최적화 축소 */
+
+        /* 거래내역 필터 영역 */
+        #filter-box { gap: 20px !important; } 
+        #filter-box .filter-item { gap: 8px; } 
+        #filter-box select#filter-account { width: 110px !important; } 
+        #filter-date { width: 140px; }
+        #filter-name { width: 120px; } 
 
         /* 버튼 정렬 스타일 */
-        .status-btn-group { display: flex; gap: 6px; margin-left: auto !important; }
-        .status-fixed-btn { width: 65px !important; min-width: 65px !important; padding: 0 !important; height: 36px; display: flex; align-items: center; justify-content: center; }
-        #filter-date { width: 150px; }
-        #filter-name { width: 120px; }
+        .status-btn-group { display: flex; gap: 6px; margin-left: auto !important; flex-shrink: 0; }
+        .status-fixed-btn { width: 60px !important; min-width: 60px !important; padding: 0 !important; height: 36px; display: flex; align-items: center; justify-content: center; }
 
-        .button-group { margin-left: auto; display: flex; gap: 8px; }
-        .btn { padding: 8px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 13px; }
+        .button-group { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 13px; }
         .btn-blue { background-color: var(--point-blue); }
         .btn-indigo { background-color: var(--point-purple); }
 
@@ -175,9 +193,10 @@
         <main id="main-status">
             <div id="status-filter-box" class="filter-container">
                 <div class="status-summary-group">
-                    <input type="text" id="status-total-invest" class="status-summary-input total-invest-val" readonly value="0원">
-                    <input type="text" id="status-total-profit" class="status-summary-input" readonly value="0원 (0%)">
-                </div>
+					<input type="text" id="status-total-invest" class="status-summary-input total-invest-val" readonly value="0원">
+					<input type="text" id="status-total-profit" class="status-summary-input" readonly value="0원 (0%)">
+					<input type="text" id="status-last-updated" class="status-summary-input" readonly value="-">
+				</div>
                 <div class="filter-item">
                     <label>시장구분</label>
                     <select id="status-filter-market">
@@ -294,7 +313,6 @@
                 <h2 style="color:var(--vv-text-mint); font-size:1rem;">거래내역 등록</h2>
                 <button style="background:none; border:none; color:white; cursor:pointer; font-size:20px;" onclick="closeModal()">&times;</button>
             </div>
-            
             <form id="register-form" onsubmit="saveTradeHistory(event)">
                 <input type="hidden" id="modal_trade_id" name="id"> 
                 <div class="form-grid">
@@ -304,11 +322,7 @@
                     </div>
                     <div class="form-group">
                         <label>시장구분</label>
-                        <select name="market_type" required>
-                            <option value="KR">KR</option>                            
-                            <option value="US">US</option>
-                            <option value="KRUS">KRUS</option>
-                        </select>
+                        <select name="market_type" required><option value="KR">KR</option><option value="US">US</option><option value="KRUS">KRUS</option></select>
                     </div>
                     <div class="form-group">
                         <label>증권사</label>
@@ -316,11 +330,7 @@
                     </div>
                     <div class="form-group">
                         <label>계좌분류</label>
-                        <select name="account_type" required>
-                            <option value="주식계좌">주식계좌</option>
-                            <option value="연금저축계좌">연금저축계좌</option>
-                            <option value="ISA">ISA</option>
-                        </select>
+                        <select name="account_type" required><option value="주식계좌">주식계좌</option><option value="연금저축계좌">연금저축계좌</option><option value="ISA">ISA</option></select>
                     </div>
                     <div class="form-group">
                         <label>자산분류</label>
@@ -336,10 +346,7 @@
                     </div>
                     <div class="form-group">
                         <label>매매구분</label>
-                        <select name="trade_side" required>
-                            <option value="매수">매수</option>
-                            <option value="매도">매도</option>
-                        </select>
+                        <select name="trade_side" required><option value="매수">매수</option><option value="매도">매도</option></select>
                     </div>
                     <div class="form-group">
                         <label>수량</label>
@@ -383,122 +390,85 @@
     </div>
 
     <script>
-        // Supabase DB 접속 정보 환경변수 설정
         const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l'; 
         
         let _supabase;
-        try {
-            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch(e) {
-            console.error("Supabase 초기화 실패:", e);
-        }
+        try { _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error("Supabase 초기화 실패:", e); }
 
-        // 전역 상태 변수 관리 정의
         let currentPage = 1;
         const itemsPerPage = 15;
         let globalUsdToKrw = 1350; 
-        let globalActiveStocks = []; // 파싱 완료된 보유 자산 종목들의 마스터 데이터 저장소
+        let globalActiveStocks = [];
 
-        // 오픈 환율 API를 활용한 실시간 달러 기준가 로드 함수
         async function initExchangeRate() {
             try {
                 const rateRes = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(3000) });
                 const rateJson = await rateRes.json();
-                if(rateJson?.rates?.KRW) {
-                    globalUsdToKrw = rateJson.rates.KRW;
-                }
-            } catch(e) {
-                console.warn("환율 조회 실패 (기본 환율 1350원 유지):", e);
-            }
+                if(rateJson?.rates?.KRW) globalUsdToKrw = rateJson.rates.KRW;
+            } catch(e) { console.warn("환율 조회 실패 (기본 환율 1350원 유지):", e); }
         }
 
-        // [엔진] 구글 스프레드시트 앱 스크립트를 통한 통합 시세 호출 API (Pre-load 방식)
         async function preloadGoogleStockPrices() {
-            // 중복 조회를 방지하기 위해 캐시 데이터 검증
-            if (window.cachedGasData && Object.keys(window.cachedGasData).length > 0) {
-                return; 
-            }
+            if (window.cachedGasData && Object.keys(window.cachedGasData).length > 0) return; 
             const gasUrl = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
             try {
                 const res = await fetch(gasUrl);
                 const json = await res.json();
                 if (json && json.status === "success" && json.stockPrices) {
                     window.cachedGasData = json.stockPrices;
-                    console.log(" 구글 실시간 시세 로드 완료");
                 }
-            } catch (e) {
-                console.error(" 구글 시세 로드 실패:", e);
-                window.cachedGasData = {}; 
-            }
+            } catch (e) { console.error("구글 시세 로드 실패:", e); window.cachedGasData = {}; }
         }
 		
-        // 메모리에 상주하는 캐시 객체로부터 종목 티커 매칭 시세 추출 함수
         async function fetchYahooPriceWithFallback(ticker) {
-            if (window.cachedGasData && window.cachedGasData[ticker]) {
-                return window.cachedGasData[ticker].price || 0;
-            }
+            if (window.cachedGasData && window.cachedGasData[ticker]) return window.cachedGasData[ticker].price || 0;
             return 0;
         }
 
-        // 개별 종목 데이터 파싱 및 가치 계산 (매입가, 현재가, 평가 손익 연산)
-        async function updateLivePriceRowWithFallback(stock) {
-            let ticker = stock.stock_code;
-            if (!ticker) return;
-
-            let livePriceKrw = await fetchYahooPriceWithFallback(ticker);
-            let currentPriceKrw = stock.avg_price; 
-
-            if (livePriceKrw && livePriceKrw > 0) {
-                currentPriceKrw = livePriceKrw; 
-            }
-
-            const totalPurchaseKrw = stock.total_cost;                  
-            const totalCurrentKrw = stock.balance * currentPriceKrw;     
-            const investmentProfit = totalCurrentKrw - totalPurchaseKrw; 
-            const investmentRate = totalPurchaseKrw > 0 ? (investmentProfit / totalPurchaseKrw) * 100 : 0; 
-
-            stock.live_price_krw = currentPriceKrw;     
-            stock.live_current_krw = totalCurrentKrw;   
-            stock.live_profit = investmentProfit;       
-            stock.live_rate = investmentRate;           
-        }
-
-        // [종목별현황] 수집 및 대시보드 마스터 배열 빌드업 함수
         async function fetchStatusDashboard() {
             const statusBody = document.getElementById('status-table-body');
             statusBody.innerHTML = '<tr><td colspan="11">보유 자산 데이터를 산출하는 중입니다...</td></tr>';
-
             if (!_supabase) return;
 
             try {
-                await initExchangeRate(); 
-                await preloadGoogleStockPrices();
+                const [tradesRes, realtimeRes] = await Promise.all([
+                    _supabase.from('tb_stock_trade').select('*'),
+                    _supabase.from('tb_realtime_stock_status').select('stock_code, live_price, updated_at')
+                ]);
 
-                // Supabase 원천 데이터 로드
-                const { data: trades, error } = await _supabase.from('tb_stock_trade').select('*');
-                if (error) throw error;
+                if (tradesRes.error) throw tradesRes.error;
+                if (realtimeRes.error) throw realtimeRes.error;
 
-                const safeTrades = trades || [];
+                const safeTrades = tradesRes.data || [];
+                const realtimePrices = realtimeRes.data || [];
+
+                let latestUpdateIso = null;
+                const priceMap = {};
+                
+                realtimePrices.forEach(item => {
+                    if (item.stock_code) priceMap[item.stock_code] = parseFloat(item.live_price) || 0;
+                    if (item.updated_at && (!latestUpdateIso || item.updated_at > latestUpdateIso)) latestUpdateIso = item.updated_at;
+                });
+
+                const txtLastUpdated = document.getElementById('status-last-updated');
+                if (txtLastUpdated) {
+                    if (latestUpdateIso) {
+                        const d = new Date(latestUpdateIso);
+                        const pad = (n) => n < 10 ? '0' + n : n;
+                        txtLastUpdated.value = `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                    } else { txtLastUpdated.value = "-"; }
+                }
+
                 const stockMap = {};
-
-                // 복합 원천 데이터를 종목/증권사/계좌 단위 맵(Group By) 구조로 재압축
                 safeTrades.forEach(trade => {
-                    // 동일 종목이라도 증권사와 계좌가 다르면 분리하여 계산하도록 키 생성
                     const tickerKey = trade.stock_code || trade.stock_name;
                     const key = `${tickerKey}_${trade.brokerage_name}_${trade.account_type}`;
                     
                     if (!stockMap[key]) {
                         stockMap[key] = {
-                            market_type: trade.market_type,
-                            brokerage_name: trade.brokerage_name, // 필터링을 위해 추가
-                            account_type: trade.account_type,     // 필터링을 위해 추가
-                            asset_type: trade.asset_type,
-                            stock_name: trade.stock_name,
-                            stock_code: trade.stock_code,
-                            balance: 0,
-                            total_cost: 0, 
-                            avg_price: 0   
+                            market_type: trade.market_type, brokerage_name: trade.brokerage_name, account_type: trade.account_type,     
+                            asset_type: trade.asset_type, stock_name: trade.stock_name, stock_code: trade.stock_code, balance: 0, total_cost: 0, avg_price: 0   
                         };
                     }
 
@@ -506,63 +476,50 @@
                     const qty = parseFloat(trade.quantity) || 0;
                     const amt = parseFloat(trade.amount_krw) || 0;
 
-                    if (trade.trade_side === '매수') {
-                        s.balance += qty;
-                        s.total_cost += amt;
-                    } else if (trade.trade_side === '매도') {
+                    if (trade.trade_side === '매수') { s.balance += qty; s.total_cost += amt; } 
+                    else if (trade.trade_side === '매도') {
                         if (s.balance > 0) {
                             const currentAvg = s.total_cost / s.balance;
-                            s.balance -= qty;
-                            s.total_cost = s.balance * currentAvg; // 총평균법 수량 비례 매입원가 상쇄 계산
-                        } else {
-                            s.balance -= qty;
-                            s.total_cost -= amt;
-                        }
+                            s.balance -= qty; s.total_cost = s.balance * currentAvg; 
+                        } else { s.balance -= qty; s.total_cost -= amt; }
                     }
                 });
 
-                // 잔고가 남아있는 종목들만 전역 변수 배열에 세팅
                 let processedStocks = Object.values(stockMap).map(s => {
                     s.avg_price = s.balance > 0 ? (s.total_cost / s.balance) : 0;
                     return s;
                 }).filter(s => s.balance !== 0);
 
-                globalActiveStocks = processedStocks;
-
-                // 실시간 평가 가치 및 평가손익 배열 동기화 실행
-                await Promise.all(globalActiveStocks.map(stock => updateLivePriceRowWithFallback(stock)));
-                
-                // 원화평가금액 큰 순서대로 내림차순 디폴트 정렬
-                globalActiveStocks.sort((a, b) => {
-                    const amtA = a.live_current_krw || 0;
-                    const amtB = b.live_current_krw || 0;
-                    return amtB - amtA;
+                processedStocks.forEach(stock => {
+                    let livePriceKrw = priceMap[stock.stock_code] || stock.avg_price; 
+                    stock.live_price_krw = livePriceKrw;     
+                    stock.live_current_krw = stock.balance * livePriceKrw;   
+                    stock.live_profit = stock.live_current_krw - stock.total_cost;       
+                    stock.live_rate = stock.total_cost > 0 ? (stock.live_profit / stock.total_cost) * 100 : 0;           
                 });
-				
-                // 최종 렌더링 파이프라인 작동
+
+                globalActiveStocks = processedStocks;
+                globalActiveStocks.sort((a, b) => (b.live_current_krw || 0) - (a.live_current_krw || 0));
                 renderStatusTable();
 
             } catch (error) {
                 console.error('현황 데이터 로드 에러:', error);
-                statusBody.innerHTML = '<tr><td colspan="11" style="color:#ff4b4b">데이터 로드 실패.</td></tr>';
+                statusBody.innerHTML = `<tr><td colspan="11" style="color:#ff4b4b">데이터 로드 실패: ${error.message}</td></tr>`;
             }
         }
 
-        // [종목별현황] 필터 필터링 및 테이블 출력 양식 바인딩 (수정 핵심 파트)
         function renderStatusTable() {
             const statusBody = document.getElementById('status-table-body');
-			
             const fMarket = document.getElementById('status-filter-market')?.value || "";
             const fBrokerage = document.getElementById('status-filter-brokerage')?.value || "";
             const fAccount = document.getElementById('status-filter-account')?.value || "";
             const fAsset = document.getElementById('status-filter-asset')?.value || "";
             const fName = document.getElementById('status-filter-name')?.value.trim().toLowerCase() || "";
 
-            // 마스터 배열에서 선택한 조건과 부합하는 행만 정밀 스크리닝
             const filtered = globalActiveStocks.filter(s => {
                 if (fMarket && s.market_type !== fMarket) return false;
-                if (fBrokerage && s.brokerage_name !== fBrokerage) return false; // 증권사 필터 적용
-                if (fAccount && s.account_type !== fAccount) return false;     // 계좌 필터 적용
+                if (fBrokerage && s.brokerage_name !== fBrokerage) return false; 
+                if (fAccount && s.account_type !== fAccount) return false;     
                 if (fAsset && s.asset_type !== fAsset) return false;
                 if (fName && !s.stock_name.toLowerCase().includes(fName)) return false;
                 return true;
@@ -582,14 +539,9 @@
                 const liveProfit = s.live_profit || 0;
                 const liveRate = s.live_rate || 0;
 
-                let profitStyle = '';
-                let profitSign = '';
-                if (liveProfit > 0) {
-                    profitStyle = 'color: #ff4b4b;';
-                    profitSign = '+';
-                } else if (liveProfit < 0) {
-                    profitStyle = 'color: #3b82f6;';
-                }
+                let profitStyle = ''; let profitSign = '';
+                if (liveProfit > 0) { profitStyle = 'color: #ff4b4b;'; profitSign = '+'; } 
+                else if (liveProfit < 0) { profitStyle = 'color: #3b82f6;'; }
 
                 html += `
                     <tr>
@@ -609,10 +561,7 @@
             });
             statusBody.innerHTML = html;
 
-            // 상단 요약판 금액 연산을 전체 데이터 기준이 아닌 필터링된 결과물(`filtered`) 기준으로 재정비
-            let totalCostSum = 0;       
-            let totalCurrentSum = 0;    
-
+            let totalCostSum = 0; let totalCurrentSum = 0;    
             filtered.forEach(s => {
                 totalCostSum += (parseFloat(s.total_cost) || 0);
                 totalCurrentSum += (parseFloat(s.live_current_krw) || 0);
@@ -624,23 +573,16 @@
             const txtInvest = document.getElementById('status-total-invest');
             const txtProfit = document.getElementById('status-total-profit');
 
-            if (txtInvest) { txtInvest.value = Math.round(totalCurrentSum).toLocaleString() + "원"; }
-
+            if (txtInvest) txtInvest.value = Math.round(totalCurrentSum).toLocaleString() + "원";
             if (txtProfit) {
                 const sign = totalProfitSum > 0 ? "+" : "";
                 txtProfit.value = `${sign}${Math.round(totalProfitSum).toLocaleString()}원 (${sign}${profitRate.toFixed(1)}%)`; 
-
-                if (totalProfitSum > 0) {
-                    txtProfit.style.color = "#ff4b4b"; 
-                } else if (totalProfitSum < 0) {
-                    txtProfit.style.color = "var(--point-blue)"; 
-                } else {
-                    txtProfit.style.color = "var(--vv-text-main)"; 
-                }
+                if (totalProfitSum > 0) txtProfit.style.color = "#ff4b4b"; 
+                else if (totalProfitSum < 0) txtProfit.style.color = "var(--point-blue)"; 
+                else txtProfit.style.color = "var(--vv-text-main)";
             }
         }
 
-        // [거래내역] 페이징 기반 원천 이력 로드 함수
         async function fetchTradeHistory(page = 1) {
             if(!_supabase) return;
             currentPage = page;
@@ -657,7 +599,6 @@
 
             let query = _supabase.from('tb_stock_trade').select('*', { count: 'exact' });
 
-            // 조회월 필터 처리
             if (fMonth && fMonth.trim() !== "") {
                 const parts = fMonth.split('-');
                 const startDate = `${fMonth}-01`;
@@ -676,123 +617,75 @@
             const from = (currentPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
-            const { data, error, count } = await query
-                .order('trade_date', { ascending: false })
-                .range(from, to);
-
+            const { data, error, count } = await query.order('trade_date', { ascending: false }).range(from, to);
             if (error) {
                 body.innerHTML = `<tr><td colspan="11" style="color:#ff4b4b">에러: ${error.message}</td></tr>`;
-                renderPagination(0);
-                return;
+                renderPagination(0); return;
             }
-
             if (!data || data.length === 0) {
                 body.innerHTML = '<tr><td colspan="11">내역이 없습니다.</td></tr>';
-                renderPagination(0);
-                return;
+                renderPagination(0); return;
             }
 
             body.innerHTML = data.map(item => {
                 const itemStr = encodeURIComponent(JSON.stringify(item));
                 return `
                     <tr>
-                        <td>${item.trade_date}</td>
-                        <td>${item.market_type}</td>
-                        <td>${item.brokerage_name}</td>
-                        <td>${item.account_type}</td>
-                        <td>${item.asset_type}</td>
-                        <td style="text-align: right; padding-right: 15px;">
-                            <span style="cursor: pointer; text-decoration: underline;" onclick="openEditModal('${itemStr}')">
-                                ${item.stock_name}
-                            </span>
-                        </td>
-                        <td>${item.stock_code || '-'}</td>
-                        <td style="color:${item.trade_side === '매수' ? '#ff4b4b' : '#3b82f6'}">${item.trade_side}</td>
-                        <td>${Number(item.quantity).toLocaleString()}</td>
-                        <td>${Number(item.price_krw).toLocaleString()}</td>
-                        <td>${Number(item.amount_krw).toLocaleString()}</td>
-                    </tr>
-                `;
+                        <td>${item.trade_date}</td><td>${item.market_type}</td><td>${item.brokerage_name}</td><td>${item.account_type}</td><td>${item.asset_type}</td>
+                        <td style="text-align: right; padding-right: 15px;"><span style="cursor: pointer; text-decoration: underline;" onclick="openEditModal('${itemStr}')">${item.stock_name}</span></td>
+                        <td>${item.stock_code || '-'}</td><td style="color:${item.trade_side === '매수' ? '#ff4b4b' : '#3b82f6'}">${item.trade_side}</td>
+                        <td>${Number(item.quantity).toLocaleString()}</td><td>${Number(item.price_krw).toLocaleString()}</td><td>${Number(item.amount_krw).toLocaleString()}</td>
+                    </tr>`;
             }).join('');
-
             renderPagination(count);
         }
 
-        // [거래내역] 하단 동적 페이징 처리 버튼 렌더러
         function renderPagination(totalCount) {
             const pagination = document.getElementById('pagination');
             const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
-            
-            let html = '';
-            const maxButtons = 5; 
+            let html = ''; const maxButtons = 5; 
             let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
             let endPage = Math.min(totalPages, startPage + maxButtons - 1);
 
-            if (endPage - startPage + 1 < maxButtons) {
-                startPage = Math.max(1, endPage - maxButtons + 1);
-            }
+            if (endPage - startPage + 1 < maxButtons) startPage = Math.max(1, endPage - maxButtons + 1);
 
             html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="fetchTradeHistory(1)">«</button>`;
             html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="fetchTradeHistory(${Math.max(1, currentPage - 1)})">‹</button>`;
-
             for (let i = startPage; i <= endPage; i++) {
-                if (i > 0) {
-                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="fetchTradeHistory(${i})">${i}</button>`;
-                }
+                if (i > 0) html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="fetchTradeHistory(${i})">${i}</button>`;
             }
-
             html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="fetchTradeHistory(${Math.min(totalPages, currentPage + 1)})">›</button>`;
             html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="fetchTradeHistory(${totalPages})">»</button>`;
-
             pagination.innerHTML = html;
         }
 
-        // 필터 요소 초기 청소(클리어) 함수
         function resetFilters() {
             const filterDate = document.getElementById('filter-date');
             if (filterDate) filterDate.value = "";
             ['filter-market', 'filter-brokerage', 'filter-account', 'filter-asset', 'filter-name', 'filter-side'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = "";
+                const el = document.getElementById(id); if(el) el.value = "";
             });
-
             ['status-filter-market', 'status-filter-brokerage', 'status-filter-account', 'status-filter-name'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = "";
+                const el = document.getElementById(id); if(el) el.value = "";
             });
             const statusAsset = document.getElementById('status-filter-asset');
             if (statusAsset) statusAsset.value = "주식";
         }
 	
-        // [새로고침] 버튼 기능 - 캐시 시세를 완전히 비우고 서버 데이터를 강제 재로드
-        function refreshStatusDashboard() {
-            window.cachedGasData = null; 
-            resetFilters();
-            fetchStatusDashboard();
-        }
-
-        // 서브 탭 화면 교체 전환 제어 스위치
         function switchView(view) {
             resetFilters();
-
             document.getElementById('btn-status').classList.toggle('active', view === 'status');
             document.getElementById('btn-trade').classList.toggle('active', view === 'trade');
-            
             const mainStatus = document.getElementById('main-status');
             const mainTrade = document.getElementById('main-trade');
             
             if (view === 'trade') {
-                mainStatus.style.display = 'none';
-                mainTrade.style.display = 'flex';
-                fetchTradeHistory(1); 
+                mainStatus.style.display = 'none'; mainTrade.style.display = 'flex'; fetchTradeHistory(1); 
             } else {
-                mainStatus.style.display = 'flex';
-                mainTrade.style.display = 'none';
-                fetchStatusDashboard();
+                mainStatus.style.display = 'flex'; mainTrade.style.display = 'none'; fetchStatusDashboard();
             }
         }
 
-        // 등록 및 수정용 모달 오픈 및 브라우저 포지셔닝 설정 함수
         function openRegisterModal() {
             const modalOverlay = document.getElementById('register-modal');
             const modalContent = document.getElementById('draggable-modal');
@@ -800,27 +693,19 @@
             
             if (modalOverlay && modalContent) {
                 modalOverlay.style.display = 'block';
-                modalContent.style.left = '50%';
-                modalContent.style.transform = 'translateX(-50%)';
-                
+                modalContent.style.left = '50%'; modalContent.style.transform = 'translateX(-50%)';
                 if (filterBox) {
                     const rect = filterBox.getBoundingClientRect();
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    modalContent.style.top = (rect.bottom + scrollTop + 5) + 'px';
-                } else {
-                    modalContent.style.top = '150px'; 
-                }
+                    modalContent.style.top = (rect.bottom + window.pageYOffset + 5) + 'px';
+                } else { modalContent.style.top = '150px'; }
             }
         }
 
-        // 수정 링크 클릭시 데이터 디코딩 후 모달 내부 바인딩 함수
         function openEditModal(itemStr) {
             const item = JSON.parse(decodeURIComponent(itemStr));
             openRegisterModal();
-            
             document.querySelector('#draggable-modal h2').innerText = '거래내역 수정';
             document.getElementById('btn-submit-modal').innerText = '수정 완료';
-            
             const form = document.getElementById('register-form');
             
             document.getElementById('modal_trade_id').value = item.id; 
@@ -843,25 +728,19 @@
             form.elements['remarks'].value = item.remarks || '';
         }
         
-        // 단가 및 수량 변동 시 실시간 총 원화/달러가 역산 공식 실현 기능
         function calculateAmounts() {
             const qty = parseFloat(document.getElementById('modal_quantity').value) || 0;
             const pKrw = parseFloat(document.getElementById('modal_price_krw').value) || 0;
             const pUsd = parseFloat(document.getElementById('modal_price_usd').value) || 0;
-
             document.getElementById('modal_amount_krw').value = Math.round(qty * pKrw);
             document.getElementById('modal_amount_usd').value = (qty * pUsd).toFixed(2);
         }
 
-        // Supabase DB 데이터 생성(Insert) / 변경(Update) 통합 트랜잭션 함수
         async function saveTradeHistory(event) {
-            if (event) event.preventDefault(); 
-            if(!_supabase) return;
-
+            if (event) event.preventDefault(); if(!_supabase) return;
             const form = document.getElementById('register-form');
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            data.institution_type = "증권"; // 디폴트 기관분류 명시 지정
+            const data = Object.fromEntries(new FormData(form).entries());
+            data.institution_type = "증권"; 
 			
             if(!data.price_usd) data.price_usd = null;
             if(!data.amount_usd) data.amount_usd = null;
@@ -869,38 +748,20 @@
             if(!data.fee_tax) data.fee_tax = null;
 			
             const tradeId = document.getElementById('modal_trade_id').value;
-
-            if (!tradeId) {
-                delete data.id; 
-            }
+            if (!tradeId) delete data.id; 
 
             try {
                 if (tradeId) {
-                    const { error } = await _supabase
-                        .from('tb_stock_trade')
-                        .update(data)
-                        .eq('id', tradeId);
-                        
-                    if (error) throw error;
-                    alert('수정되었습니다.');
+                    const { error } = await _supabase.from('tb_stock_trade').update(data).eq('id', tradeId);
+                    if (error) throw error; alert('수정되었습니다.');
                 } else {
-                    const { error } = await _supabase
-                        .from('tb_stock_trade')
-                        .insert([data]);
-                        
-                    if (error) throw error;
-                    alert('저장되었습니다.');
+                    const { error } = await _supabase.from('tb_stock_trade').insert([data]);
+                    if (error) throw error; alert('저장되었습니다.');
                 }
-                
-                closeModal();
-                fetchTradeHistory(currentPage); 
-                
-            } catch (err) {
-                alert('처리 중 에러가 발생했습니다: ' + err.message);
-            }
+                closeModal(); fetchTradeHistory(currentPage); 
+            } catch (err) { alert('처리 중 에러가 발생했습니다: ' + err.message); }
         }
 
-        // 모달 닫기 및 인풋 폼 초기화 리셋
         function closeModal() { 
             document.getElementById('register-modal').style.display = 'none'; 
             document.querySelector('#draggable-modal h2').innerText = '거래내역 등록';
@@ -909,53 +770,29 @@
             document.getElementById('register-form').reset();
         }
 		
-        // 모달 헤더 바 드래그 이동 기능 컴포넌트
         function makeModalDraggable(modalEl, headerEl) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            if (headerEl) {
-                headerEl.onmousedown = dragMouseDown;
-            } else {
-                modalEl.onmousedown = dragMouseDown;
-            }
+            if (headerEl) headerEl.onmousedown = dragMouseDown;
+            else modalEl.onmousedown = dragMouseDown;
 
             function dragMouseDown(e) {
-                e = e || window.event;
                 if (['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(e.target.tagName)) return;
-                e.preventDefault();
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
+                e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY;
+                document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
             }
-
             function elementDrag(e) {
-                e = e || window.event;
-                e.preventDefault();
-                pos1 = pos3 - e.clientX;
-                pos2 = pos4 - e.clientY;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                
+                e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY;
                 modalEl.style.transform = 'none'; 
-                modalEl.style.top = (modalEl.offsetTop - pos2) + "px";
-                modalEl.style.left = (modalEl.offsetLeft - pos1) + "px";
+                modalEl.style.top = (modalEl.offsetTop - pos2) + "px"; modalEl.style.left = (modalEl.offsetLeft - pos1) + "px";
             }
-
-            function closeDragElement() {
-                document.onmouseup = null;
-                document.onmousemove = null;
-            }
+            function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
         }
 
-        // 페이지 구동 초기화 훅
         window.onload = () => {
-            switchView('status'); // 종목별 현황 대시보드를 디폴트 첫 화면으로 구동 호출
-            
+            switchView('status'); 
             const modal = document.getElementById('draggable-modal');
             const header = document.getElementById('modal-header-drag');
-            if (modal && header) {
-                makeModalDraggable(modal, header);
-            }
+            if (modal && header) makeModalDraggable(modal, header);
         };
     </script>
 </body>
