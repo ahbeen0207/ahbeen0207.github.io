@@ -34,7 +34,7 @@
         /* 상단 레이아웃 */
         .top-section { display: flex; gap: 12px; height: 60px; margin-bottom: 12px; flex-shrink: 0; }
         .logo-box { width: var(--sidebar-width); height: 60px; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background-color: var(--vv-bg-card); padding: 2px; overflow: hidden; }
-        .logo-box img { height: 54px; width: auto; object-fit: cover; border-radius: 6px; }
+        .logo-box a { color: var(--vv-text-mint); font-weight: bold; text-decoration: none; font-size: 16px; letter-spacing: 1px; }
         .header-menu { flex: 1; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; background-color: var(--vv-bg-card); overflow: hidden; }
         .header-menu a { flex: 1; display: flex; justify-content: center; align-items: center; text-decoration: none; color: var(--vv-text-main); font-weight: 600; border-right: 1px solid var(--vv-border); transition: 0.2s; }
         .header-menu a.active { background-color: var(--point-blue); color: white; }
@@ -96,8 +96,8 @@
         /* 트리맵 구조 스타일 지정 */
         .treemap-wrapper { flex: 1; width: 100%; height: 100%; position: relative; background-color: #0b0b0b; overflow: hidden; }
         
-        /* 트리맵 내 텍스트 크기 기존(18px, 14px, 15px) 대비 1.5배 상향 확대 조정 */
-        .tm-block { position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 10px; font-family: 'Pretendard', sans-serif; transition: opacity 0.2s; box-sizing: border-box; }
+        /* 트리맵 내 텍스트 크기 확대 조정 */
+        .tm-block { position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 10px; font-family: 'Pretendard', sans-serif; transition: opacity 0.2s; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.2); }
         .tm-block:hover { opacity: 0.9; }
         .tm-title { font-size: 27px; font-weight: bold; margin-bottom: 9px; }
         .tm-ratio { font-size: 21px; margin-bottom: 6px; opacity: 0.9; }
@@ -117,7 +117,7 @@
 
     <div class="top-section">
         <div class="logo-box">
-            <a href="select_page.html" style="color: var(--vv-text-mint); font-weight: bold; text-decoration: none; font-size: 16px; letter-spacing: 1px;">HOME</a>
+            <a href="select_page.html">HOME</a>
         </div>
         <div class="header-menu">
             <a href="#" class="active">자산현황</a>
@@ -130,7 +130,7 @@
 
     <div class="wrapper">
         <nav>
-            <div class="sidebar-logo-box"><img src="rabbit.jpg" alt="로고" onerror="this.src=''"></div>
+            <div class="sidebar-logo-box"><img src="rabbit.jpg" alt="로고" onerror="this.style.display='none'"></div>
             <button id="btn-dashboard" class="nav-btn active" onclick="switchDashboardView('dashboard')">대시보드</button>
             <button id="btn-graph" class="nav-btn" onclick="switchDashboardView('graph')">월별자산그래프</button>
         </nav>
@@ -227,7 +227,6 @@
                         <label class="checkbox-item"><input type="checkbox" id="chk-cash" checked onchange="updateLineChart()"> 현금</label>
                         <label class="checkbox-item"><input type="checkbox" id="chk-gold" checked onchange="updateLineChart()"> 기타(금은)</label>
                     </div>
-                    
                     <div>
                         <select id="sel-year" onchange="fetchGraphMonthlyData()" style="background: var(--vv-bg-main); color: var(--vv-text-main); border: 1px solid var(--vv-border); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;">
                             <option value="2026" selected>2026년</option>
@@ -244,416 +243,426 @@
     </div>
 
     <script>
-        // 전역 변수와 함수
         let globalUsdToKrw = 1350;
         window.cachedGasData = null;
 
-        async function initExchangeRate() {
-            try {
-                const rateRes = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(3000) });
-                const rateJson = await rateRes.json();
-                if(rateJson?.rates?.KRW) {
-                    globalUsdToKrw = rateJson.rates.KRW;
-                }
-            } catch(e) {
-                console.warn("환율 조회 실패 (기본값 사용):", e);
-            }
-        }
-
-        async function preloadGoogleStockPrices() {
-            const gasUrl = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
-            try {
-                const response = await fetch(`${gasUrl}?t=${new Date().getTime()}`, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                const data = await response.json();
-                if (data && data.status === "success") {
-                    window.cachedGasData = data.stockPrices;
-                    console.log("✅ 대시보드 - 시세 로드 성공");
-                }
-            } catch (error) {
-                console.error("❌ 대시보드 - 시세 로드 실패:", error);
-            }
-        }
-
-        function getLivePriceRowWithFallback(stockCode, fallbackPrice) {
-            let currentPriceKrw = fallbackPrice;
-            if (stockCode && window.cachedGasData && window.cachedGasData[stockCode]) {
-                let livePriceKrw = window.cachedGasData[stockCode].price || 0;
-                if (livePriceKrw > 0) {
-                    currentPriceKrw = livePriceKrw;
-                }
-            }
-            return currentPriceKrw;
-        }
-
-        // Supabase 초기화 설정
         const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l';
         const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let myLineChart = null;
         let currentChartData = { labels: [], total: [], stock: [], bond: [], cash: [], gold: [] };
+        let calculatedAssets = { total: 0, stock: 0, bond: 0, cash: 0, gold: 0 };
 
-        // 화면 탭 변환 함수
+        async function initExchangeRate() {
+            try {
+                const rateRes = await fetch('https://open.er-api.com/v6/latest/USD');
+                const rateJson = await rateRes.json();
+                if(rateJson?.rates?.KRW) {
+                    globalUsdToKrw = rateJson.rates.KRW;
+                }
+            } catch(e) {
+                console.warn("환율 정보 조회 실패 기본값 사용:", e);
+            }
+        }
+
+        async function preloadGoogleStockPrices() {
+            const gasUrl = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
+            try {
+                const response = await fetch(`${gasUrl}?t=${new Date().getTime()}`, { method: 'GET', mode: 'cors' });
+                const data = await response.json();
+                if (data && data.status === "success") {
+                    window.cachedGasData = data.stockPrices;
+                    console.log("✅ 실시간 시세 캐시 동기화 완료");
+                }
+            } catch (error) {
+                console.error("❌ 실시간 시세 캐시 동기화 실패:", error);
+            }
+        }
+
+        function normalizeAssetType(rawType) {
+            if (!rawType) return '현금';
+            const str = rawType.trim();
+            if (str.includes('주식')) return '주식';
+            if (str.includes('채권')) return '채권';
+            if (str.includes('금') || str.includes('은')) return '금은';
+            if (str.includes('현금') || str.includes('예금') || str.includes('적금')) return '현금';
+            return '주식';
+        }
+
+        async function fetchDashboardData() {
+            try {
+                const [stockRes, depositRes] = await Promise.all([
+                    _supabase.from('tb_realtime_stock_status').select('*'),
+                    _supabase.from('deposit_management').select('*').eq('status', '유지')
+                ]);
+
+                if (stockRes.error) throw stockRes.error;
+                if (depositRes.error) throw depositRes.error;
+
+                let stockSum = 0;
+                let bondSum = 0;
+                let cashSum = 0;
+                let goldSum = 0;
+
+                if (stockRes.data && stockRes.data.length > 0) {
+                    stockRes.data.forEach(item => {
+                        const type = normalizeAssetType(item.asset_type);
+                        const evalAmount = parseFloat(item.eval_amount || 0);
+
+                        if (type === '주식') stockSum += evalAmount;
+                        else if (type === '채권') bondSum += evalAmount;
+                        else if (type === '금은') goldSum += evalAmount;
+                        else if (type === '현금') cashSum += evalAmount;
+                    });
+                }
+
+                if (depositRes.data && depositRes.data.length > 0) {
+                    depositRes.data.forEach(item => {
+                        const depositAmount = parseFloat(item.amount || 0);
+                        cashSum += depositAmount;
+                    });
+                }
+
+                calculatedAssets.stock = Math.max(0, Math.round(stockSum));
+                calculatedAssets.bond = Math.max(0, Math.round(bondSum));
+                calculatedAssets.cash = Math.max(0, Math.round(cashSum));
+                calculatedAssets.gold = Math.max(0, Math.round(goldSum));
+                calculatedAssets.total = calculatedAssets.stock + calculatedAssets.bond + calculatedAssets.cash + calculatedAssets.gold;
+
+                renderSummaryUI();
+                renderDynamicTreemap();
+
+            } catch (err) {
+                console.error("❌ 대시보드 및 현금 데이터 로딩 실패:", err);
+            }
+        }
+
+        function renderSummaryUI() {
+            const assets = calculatedAssets;
+            const total = assets.total || 1;
+
+            document.getElementById('db-ratio-stock').innerText = ((assets.stock / total) * 100).toFixed(1) + '%';
+            document.getElementById('db-ratio-bond').innerText = ((assets.bond / total) * 100).toFixed(1) + '%';
+            document.getElementById('db-ratio-cash').innerText = ((assets.cash / total) * 100).toFixed(1) + '%';
+            document.getElementById('db-ratio-gold').innerText = ((assets.gold / total) * 100).toFixed(1) + '%';
+
+            document.getElementById('db-val-total').innerText = assets.total.toLocaleString() + ' 원';
+            document.getElementById('db-val-stock').innerText = assets.stock.toLocaleString() + ' 원';
+            document.getElementById('db-val-bond').innerText = assets.bond.toLocaleString() + ' 원';
+            document.getElementById('db-val-cash').innerText = assets.cash.toLocaleString() + ' 원';
+            document.getElementById('db-val-gold').innerText = assets.gold.toLocaleString() + ' 원';
+
+            if(document.getElementById('gr-val-total')) {
+                document.getElementById('gr-val-total').innerText = assets.total.toLocaleString() + ' 원';
+                document.getElementById('gr-val-stock').innerText = assets.stock.toLocaleString() + ' 원';
+                document.getElementById('gr-val-bond').innerText = assets.bond.toLocaleString() + ' 원';
+                document.getElementById('gr-val-cash').innerText = assets.cash.toLocaleString() + ' 원';
+                document.getElementById('gr-val-gold').innerText = assets.gold.toLocaleString() + ' 원';
+                
+                document.getElementById('gr-ratio-stock').innerText = ((assets.stock / total) * 100).toFixed(1) + '%';
+                document.getElementById('gr-ratio-bond').innerText = ((assets.bond / total) * 100).toFixed(1) + '%';
+                document.getElementById('gr-ratio-cash').innerText = ((assets.cash / total) * 100).toFixed(1) + '%';
+                document.getElementById('gr-ratio-gold').innerText = ((assets.gold / total) * 100).toFixed(1) + '%';
+            }
+        }
+
+        function renderDynamicTreemap() {
+            const container = document.getElementById('treemap-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            if (width === 0 || height === 0) return;
+
+            const assets = calculatedAssets;
+            const dataList = [
+                { title: '주식', val: assets.stock, color: 'var(--color-stock)' },
+                { title: '채권', val: assets.bond, color: 'var(--color-bond)' },
+                { title: '현금', val: assets.cash, color: 'var(--color-cash)' },
+                { title: '기타(금은)', val: assets.gold, color: 'var(--color-gold)' }
+            ].filter(d => d.val > 0).sort((a, b) => b.val - a.val);
+
+            const totalVal = dataList.reduce((sum, d) => sum + d.val, 0);
+            if (totalVal === 0) {
+                container.innerHTML = '<div style="color:#aaa; text-align:center; padding-top:100px; font-size:16px;">보유하거나 연동 가능한 자산 내역이 없습니다.</div>';
+                return;
+            }
+
+            let remainingWidth = width;
+            let remainingHeight = height;
+            let currentX = 0;
+            let currentY = 0;
+
+            dataList.forEach((item, idx) => {
+                const ratio = item.val / totalVal;
+                const blockArea = width * height * ratio;
+
+                const block = document.createElement('div');
+                block.className = 'tm-block';
+                block.style.backgroundColor = item.color;
+
+                if (remainingWidth >= remainingHeight) {
+                    let blockWidth = blockArea / remainingHeight;
+                    if (idx === dataList.length - 1) blockWidth = remainingWidth; 
+                    
+                    block.style.left = currentX + 'px';
+                    block.style.top = currentY + 'px';
+                    block.style.width = blockWidth + 'px';
+                    block.style.height = remainingHeight + 'px';
+
+                    currentX += blockWidth;
+                    remainingWidth -= blockWidth;
+                } else {
+                    let blockHeight = blockArea / remainingWidth;
+                    if (idx === dataList.length - 1) blockHeight = remainingHeight;
+
+                    block.style.left = currentX + 'px';
+                    block.style.top = currentY + 'px';
+                    block.style.width = remainingWidth + 'px';
+                    block.style.height = blockHeight + 'px';
+
+                    currentY += blockHeight;
+                    remainingHeight -= blockHeight;
+                }
+
+                const percentText = (ratio * 100).toFixed(1) + '%';
+                block.innerHTML = `
+                    <div class="tm-title">${item.title}</div>
+                    <div class="tm-ratio">${percentText}</div>
+                    <div class="tm-val">${item.val.toLocaleString()} 원</div>
+                `;
+                container.appendChild(block);
+            });
+        }
+
+        // 🛠️ 월별 스냅샷 매핑 오류 완벽 수정 완료
+        async function fetchGraphMonthlyData() {
+            const selectedYear = document.getElementById('sel-year').value; // "2026"
+            const labels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            
+            let totalMonthly = Array(12).fill(0);
+            let stockMonthly = Array(12).fill(0);
+            let bondMonthly = Array(12).fill(0);
+            let cashMonthly = Array(12).fill(0);
+            let goldMonthly = Array(12).fill(0);
+
+            try {
+                const { data: historyData, error } = await _supabase
+                    .from('tb_monthly_snapshot')
+                    .select('*')
+                    .like('snapshot_month', `${selectedYear}-%`); // 선택된 연도의 데이터만 정밀 타겟팅
+
+                if (error) throw error;
+
+                if (historyData && historyData.length > 0) {
+                    historyData.forEach(row => {
+                        const [sYear, sMonth] = row.snapshot_month.split('-').map(Number);
+                        
+                        // 캘린더 정규 매핑 규칙 적용 (예: 4월 데이터 -> 인덱스 3)
+                        let targetMonthIdx = sMonth - 1; 
+
+                        if (targetMonthIdx >= 0 && targetMonthIdx < 12) {
+                            totalMonthly[targetMonthIdx] = Math.round(parseFloat(row.total_sum || 0));
+                            stockMonthly[targetMonthIdx] = Math.round(parseFloat(row.stock_sum || 0));
+                            bondMonthly[targetMonthIdx] = Math.round(parseFloat(row.bond_sum || 0));
+                            cashMonthly[targetMonthIdx] = Math.round(parseFloat(row.cash_sum || 0));
+                            goldMonthly[targetMonthIdx] = Math.round(parseFloat(row.gold_sum || 0));
+                        }
+                    });
+                }
+
+            } catch (err) {
+                console.error("❌ 월별 히스토리 데이터 조회 실패:", err);
+            }
+
+            currentChartData.labels = labels;
+            currentChartData.total = totalMonthly;
+            currentChartData.stock = stockMonthly;
+            currentChartData.bond = bondMonthly;
+            currentChartData.cash = cashMonthly;
+            currentChartData.gold = goldMonthly;
+
+            renderLineChart();
+        }
+
+        function renderLineChart() {
+            const ctx = document.getElementById('lineChart');
+            if (!ctx) return;
+
+            if (window.myLineChart) {
+                window.myLineChart.destroy();
+            }
+
+            // 이미지와 100% 동일한 선 색상 지정
+            const colors = {
+                total: '#ff0000',  // 총자산: 빨강
+                stock: '#ff00bf',  // 주식: 핫핑크
+                bond: '#00b050',   // 채권: 초록
+                cash: '#7030a0',   // 현금: 보라
+                gold: '#0070c0'    // 기타(금은): 파랑
+            };
+
+            window.myLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: currentChartData.labels,
+                    datasets: [
+                        {
+                            label: '총자산',
+                            data: currentChartData.total,
+                            borderColor: colors.total,
+                            backgroundColor: 'transparent', // 이미지처럼 배경 채우기 없음
+                            borderWidth: 3,
+                            pointBackgroundColor: colors.total,
+                            pointBorderColor: colors.total,
+                            pointRadius: 4,                 // 꺾임점 원 크기
+                            tension: 0                      // 이미지와 동일하게 꺾은선(직선) 처리
+                        },
+                        {
+                            label: '주식',
+                            data: currentChartData.stock,
+                            borderColor: colors.stock,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointBackgroundColor: colors.stock,
+                            pointBorderColor: colors.stock,
+                            pointRadius: 3,
+                            tension: 0
+                        },
+                        {
+                            label: '채권',
+                            data: currentChartData.bond,
+                            borderColor: colors.bond,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointBackgroundColor: colors.bond,
+                            pointBorderColor: colors.bond,
+                            pointRadius: 3,
+                            tension: 0
+                        },
+                        {
+                            label: '현금',
+                            data: currentChartData.cash,
+                            borderColor: colors.cash,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointBackgroundColor: colors.cash,
+                            pointBorderColor: colors.cash,
+                            pointRadius: 3,
+                            tension: 0
+                        },
+                        {
+                            label: '기타(금은)',
+                            data: currentChartData.gold,
+                            borderColor: colors.gold,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointBackgroundColor: colors.gold,
+                            pointBorderColor: colors.gold,
+                            pointRadius: 3,
+                            tension: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // 이미지처럼 차트 내부 상단 범례(도표설명)는 숨김 (위의 체크박스로 대체하므로)
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { 
+                                color: '#1a1a1a',          // 이미지의 어두운 회색 격자선 색상
+                                lineWidth: 1 
+                            },
+                            ticks: { 
+                                color: '#888888',          // 가로축 글자 색상 (1월, 2월...)
+                                font: { size: 12, family: 'Pretendard' }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            min: 0,
+                            max: 700000000,                // 이미지와 동일하게 최대 70,000 만원(7억)으로 고정
+                            grid: { 
+                                color: '#1a1a1a',          // 세로축 격자선 색상
+                                lineWidth: 1 
+                            },
+                            ticks: {
+                                color: '#888888',          // 세로축 글자 색상
+                                font: { size: 12, family: 'Pretendard' },
+                                stepSize: 100000000,       // 1억(10,000 만원) 단위로 눈금 표시
+                                callback: function(value) {
+                                    // 이미지와 완벽하게 동일하게 "X,XXX 만원" 포맷으로 출력 구현
+                                    return (value / 10000).toLocaleString() + ' 만원';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 체크박스 매칭 인덱스 순서 동기화 교정 완료
+        function updateLineChart() {
+            if(!myLineChart) return;
+            myLineChart.data.datasets[0].hidden = !document.getElementById('chk-total').checked;
+            myLineChart.data.datasets[1].hidden = !document.getElementById('chk-stock').checked;
+            myLineChart.data.datasets[2].hidden = !document.getElementById('chk-bond').checked;
+            myLineChart.data.datasets[3].hidden = !document.getElementById('chk-cash').checked;
+            myLineChart.data.datasets[4].hidden = !document.getElementById('chk-gold').checked;
+            myLineChart.update();
+        }
+
         function switchDashboardView(viewMode) {
             const btnDb = document.getElementById('btn-dashboard');
             const btnGr = document.getElementById('btn-graph');
             const mainDb = document.getElementById('main-dashboard');
             const mainGr = document.getElementById('main-graph');
 
-            if(viewMode === 'dashboard') {
-                if(btnDb) btnDb.classList.add('active');
-                if(btnGr) btnGr.classList.remove('active');
-                if(mainDb) mainDb.style.display = 'flex';
-                if(mainGr) mainGr.style.display = 'none';
+            if (viewMode === 'dashboard') {
+                btnDb.classList.add('active');
+                btnGr.classList.remove('active');
+                mainDb.style.display = 'flex';
+                mainGr.style.display = 'none';
                 renderDynamicTreemap();
             } else {
-                if(btnGr) btnGr.classList.add('active');
-                if(btnDb) btnDb.classList.remove('active');
-                if(mainGr) mainGr.style.display = 'flex';
-                if(mainDb) mainDb.style.display = 'none';
-                
-                fetchGraphMonthlyData().then(() => {
-                    setTimeout(() => {
-                        initLineChart();
-                    }, 100);
-                });
+                btnDb.classList.remove('active');
+                btnGr.classList.add('active');
+                mainDb.style.display = 'none';
+                mainGr.style.display = 'flex';
+                fetchGraphMonthlyData();
             }
         }
 
-        // =========================================================================
-        // 1. 실시간 Supabase 데이터 fetch 및 자산 정산 프로세스 (원화 현재가 총합 반영)
-        // =========================================================================
-        async function fetchDashboardData() {
-            if (!_supabase) return;
-
-            await initExchangeRate();
-            await preloadGoogleStockPrices();
-
-            try {
-                // 1. 주식/채권/금은 거래 내역 가져오기
-                const { data: trades, error: tradeError } = await _supabase.from('tb_stock_trade').select('*');
-                if (tradeError) throw tradeError;
-
-                // 2. 예적금/현금 내역 가져오기 (상태가 '유지'인 항목만)
-                const { data: deposits, error: depositError } = await _supabase
-                    .from('deposit_management')
-                    .select('total_amount')
-                    .eq('status', '유지');
-                if (depositError) throw depositError;
-
-                const stockMap = {};
-                (trades || []).forEach(trade => {
-                    const key = trade.stock_code || trade.stock_name;
-                    if (!stockMap[key]) {
-                        stockMap[key] = {
-                            asset_type: trade.asset_type,
-                            stock_name: trade.stock_name,
-                            stock_code: trade.stock_code,
-                            balance: 0,
-                            total_cost: 0
-                        };
-                    }
-                    const s = stockMap[key];
-                    const qty = parseFloat(trade.quantity) || 0;
-                    const amt = parseFloat(trade.amount_krw) || 0;
-
-                    if (trade.trade_side === '매수') {
-                        s.balance += qty;
-                        s.total_cost += amt; // 평단가 계산용 원본 매수 총액 누적
-                    } else if (trade.trade_side === '매도') {
-                        s.balance -= qty;
-                        // 보완: 매도 시 total_cost를 단순히 차감하면 왜곡되므로 남은 평단가 비율대로 조정하거나, 
-                        // 잔고가 0이 될 때만 클리어 처리하여 안정성을 확보합니다.
-                        if (s.balance <= 0) {
-                            s.balance = 0;
-                            s.total_cost = 0;
-                        }
-                    }
-                });
-
-                const processedStocks = Object.values(stockMap).filter(s => s.balance > 0).map(s => {
-                    const avgPrice = s.total_cost / s.balance;
-                    // 공통 가공 함수(getLivePriceRowWithFallback)를 연동하여 가독성 및 안전성 확보
-                    const livePrice = getLivePriceRowWithFallback(s.stock_code, avgPrice);
-                    s.live_current_krw = s.balance * livePrice;
-                    return s;
-                });
-
-                let stockSum = 0, bondSum = 0, goldSum = 0, cashSum = 0;
-                
-                processedStocks.forEach(s => {
-                    if (s.asset_type === '주식') stockSum += s.live_current_krw;
-                    else if (s.asset_type === '채권') bondSum += s.live_current_krw;
-                    else if (s.asset_type === '금은') goldSum += s.live_current_krw;
-                });
-
-                (deposits || []).forEach(d => {
-                    cashSum += parseFloat(d.total_amount) || 0;
-                });
-
-                const totalSum = stockSum + bondSum + goldSum + cashSum;
-
-                // UI 및 트리맵 업데이트
-                updateSummaryCardUI(totalSum, stockSum, bondSum, cashSum, goldSum);
-                updateDashboardTreemapData(stockSum, bondSum, cashSum, goldSum);
-
-            } catch (err) {
-                console.error("대시보드 데이터 처리 에러:", err);
-            }
-        }
-
-        // =========================================================================
-        // 2. 월별 스냅샷 데이터 수집 및 만원 단위 정산 알고리즘
-        // =========================================================================
-        async function fetchGraphMonthlyData() {
-            if (!_supabase) return;
-
-            const selectedYear = document.getElementById('sel-year').value;
-
-            try {
-                const { data: snapshots, error: snapshotError } = await _supabase
-                    .from('tb_monthly_snapshot')
-                    .select('*')
-                    .like('snapshot_month', `${selectedYear}-%`);
-
-                if (snapshotError) throw snapshotError;
-
-                const monthlyMap = {};
-                for (let m = 1; m <= 12; m++) {
-                    const monthStr = String(m).padStart(2, '0');
-                    monthlyMap[`${selectedYear}-${monthStr}`] = { total_sum: 0, stock_sum: 0, bond_sum: 0, cash_sum: 0, gold_sum: 0 };
-                }
-
-                (snapshots || []).forEach(snap => {
-                    if (monthlyMap[snap.snapshot_month]) {
-                        monthlyMap[snap.snapshot_month] = {
-                            total_sum: parseFloat(snap.total_sum) || 0,
-                            stock_sum: parseFloat(snap.stock_sum) || 0,
-                            bond_sum: parseFloat(snap.bond_sum) || 0,
-                            cash_sum: parseFloat(snap.cash_sum) || 0,
-                            gold_sum: parseFloat(snap.gold_sum) || 0
-                        };
-                    }
-                });
-
-                const labels = [];
-                const timelineTotal = [];
-                const timelineStock = [];
-                const timelineBond = [];
-                const timelineCash = [];
-                const timelineGold = [];
-
-                for (let m = 1; m <= 12; m++) {
-                    labels.push(`${m}월`);
-                    const monthStr = String(m).padStart(2, '0');
-                    const dataKey = `${selectedYear}-${monthStr}`;
-                    const targetData = monthlyMap[dataKey];
-
-                    timelineTotal.push(Math.floor(targetData.total_sum / 10000));
-                    timelineStock.push(Math.floor(targetData.stock_sum / 10000));
-                    timelineBond.push(Math.floor(targetData.bond_sum / 10000));
-                    timelineCash.push(Math.floor(targetData.cash_sum / 10000));
-                    timelineGold.push(Math.floor(targetData.gold_sum / 10000));
-                }
-
-                currentChartData = {
-                    labels: labels,
-                    total: timelineTotal,
-                    stock: timelineStock,
-                    bond: timelineBond,
-                    cash: timelineCash,
-                    gold: timelineGold
-                };
-
-                if (myLineChart) {
-                    myLineChart.data.labels = currentChartData.labels;
-                    myLineChart.data.datasets[0].data = currentChartData.total;
-                    myLineChart.data.datasets[1].data = currentChartData.stock;
-                    myLineChart.data.datasets[2].data = currentChartData.bond;
-                    myLineChart.data.datasets[3].data = currentChartData.cash;
-                    myLineChart.data.datasets[4].data = currentChartData.gold;
-                    myLineChart.update();
-                }
-
-            } catch (err) {
-                console.error("그래프 월별 데이터 로드 에러:", err);
-            }
-        }
-
-        function updateTextSafe(id, text) {
-            const el = document.getElementById(id);
-            if (el) el.innerText = text;
-        }
-
-        function updateSummaryCardUI(total, stock, bond, cash, gold) {
-            const stockRatio = total > 0 ? ((stock / total) * 100).toFixed(1) : '0.0';
-            const bondRatio = total > 0 ? ((bond / total) * 100).toFixed(1) : '0.0';
-            const cashRatio = total > 0 ? ((cash / total) * 100).toFixed(1) : '0.0';
-            const goldRatio = total > 0 ? ((gold / total) * 100).toFixed(1) : '0.0';
-
-            const prefixes = ['db-', 'gr-'];
-            prefixes.forEach(prefix => {
-                updateTextSafe(`${prefix}val-total`, Math.floor(total).toLocaleString() + ' 원');
-                updateTextSafe(`${prefix}val-stock`, Math.floor(stock).toLocaleString() + ' 원');
-                updateTextSafe(`${prefix}ratio-stock`, stockRatio + '%');
-                updateTextSafe(`${prefix}val-bond`, Math.floor(bond).toLocaleString() + ' 원');
-                updateTextSafe(`${prefix}ratio-bond`, bondRatio + '%');
-                updateTextSafe(`${prefix}val-cash`, Math.floor(cash).toLocaleString() + ' 원');
-                updateTextSafe(`${prefix}ratio-cash`, cashRatio + '%');
-                updateTextSafe(`${prefix}val-gold`, Math.floor(gold).toLocaleString() + ' 원');
-                updateTextSafe(`${prefix}ratio-gold`, goldRatio + '%');
-            });
-        }
-
-        function updateDashboardTreemapData(stock, bond, cash, gold) {
-            window.dashboardAssetData = [
-                { label: '주식투자', value: stock, color: 'var(--color-stock)' },
-                { label: '채권', value: bond, color: 'var(--color-bond)' },
-                { label: '예적금/현금', value: cash, color: 'var(--color-cash)' },
-                { label: '기타자산(금은)', value: gold, color: 'var(--color-gold)' }
-            ];
-            renderDynamicTreemap();
-        }
-
-        function renderDynamicTreemap() {
-            const container = document.getElementById('treemap-container');
-            if (!container) return;
-            container.innerHTML = "";
-            
-            const rawData = window.dashboardAssetData || [];
-            const data = rawData.filter(item => typeof item.value === 'number' && !isNaN(item.value) && item.value > 0);
-            
-            const totalValue = data.reduce((sum, item) => sum + item.value, 0);
-            if(totalValue === 0) {
-                container.innerHTML = '<div style="color:var(--vv-text-muted); padding:20px; text-align:center;">표시할 실시간 자산 데이터가 없습니다.</div>';
-                return;
-            }
-            
-            const cWidth = container.clientWidth;
-            const cHeight = container.clientHeight;
-            if (cWidth === 0 || cHeight === 0) return; 
-
-            const sortedItems = [...data].sort((a, b) => b.value - a.value);
-            let left = 0, top = 0, right = cWidth, bottom = cHeight;
-
-            sortedItems.forEach((item, index) => {
-                const blockWidth = right - left;
-                const blockHeight = bottom - top;
-                const currentTotal = sortedItems.slice(index).reduce((acc, cur) => acc + cur.value, 0);
-                
-                if (currentTotal === 0 || blockWidth <= 0 || blockHeight <= 0) return;
-                
-                const ratio = item.value / currentTotal;
-                let bLeft = left, bTop = top, bWidth = blockWidth, bHeight = blockHeight;
-
-                if (index === 0) {
-                    bWidth = blockWidth * ratio;
-                    left += bWidth;
-                } else if (index === 1) {
-                    bHeight = blockHeight * ratio;
-                    top += bHeight;
-                } else if (index === 2) {
-                    bWidth = blockWidth * ratio;
-                    left += bWidth;
-                } else {
-                    bLeft = left; bTop = top; bWidth = right - left; bHeight = bottom - top;
-                }
-
-                const displayRatio = ((item.value / totalValue) * 100).toFixed(1);
-                const blockEl = document.createElement('div');
-                blockEl.className = 'tm-block';
-                blockEl.style.left = `${Math.max(0, bLeft)}px`;
-                blockEl.style.top = `${Math.max(0, bTop)}px`;
-                blockEl.style.width = `${Math.max(0, bWidth)}px`;
-                blockEl.style.height = `${Math.max(0, bHeight)}px`;
-                blockEl.style.backgroundColor = item.color;
-                blockEl.style.position = 'absolute';
-
-                blockEl.innerHTML = `
-                    <div class="tm-title">${item.label}</div>
-                    <div class="tm-ratio">${displayRatio}%</div>
-                    <div class="tm-val">${Math.floor(item.value).toLocaleString()} 원</div>
-                `;
-                container.appendChild(blockEl);
-            });
-        }
-
-        // =========================================================================
-        // 5. Chart.js 라인 차트 생성 및 체크박스 필터 제어
-        // =========================================================================
-        function initLineChart() {
-            const ctx = document.getElementById('lineChart');
-            if (!ctx) return;
-
-            if (myLineChart) {
-                myLineChart.destroy();
-            }
-
-            myLineChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: currentChartData.labels,
-                    datasets: [
-                        { label: '총자산', data: currentChartData.total, borderColor: '#ff0000', backgroundColor: 'transparent', tension: 0.1, borderWidth: 3 },
-                        { label: '주식', data: currentChartData.stock, borderColor: '#ff00bf', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
-                        { label: '채권', data: currentChartData.bond, borderColor: '#00b050', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
-                        { label: '현금', data: currentChartData.cash, borderColor: '#7030a0', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
-                        // 일치화: 차트 선 색상도 상단 뱃지 및 CSS 정의(--color-gold: #0070c0)와 동일하게 매칭
-                        { label: '금은', data: currentChartData.gold, borderColor: '#0070c0', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: '#232323' }, ticks: { color: '#888' } },
-                        y: { 
-                            grid: { color: '#232323' }, 
-                            ticks: { 
-                                color: '#888',
-                                callback: function(value) { return value.toLocaleString() + ' 만원'; }
-                            } 
-                        }
-                    }
-                }
-            });
-
-            updateLineChart();
-        }
-
-        function updateLineChart() {
-            if(!myLineChart) return;
-            
-            myLineChart.data.datasets[0].hidden = !document.getElementById('chk-total').checked;
-            myLineChart.data.datasets[1].hidden = !document.getElementById('chk-stock').checked;
-            myLineChart.data.datasets[2].hidden = !document.getElementById('chk-bond').checked;
-            myLineChart.data.datasets[3].hidden = !document.getElementById('chk-cash').checked;
-            myLineChart.data.datasets[4].hidden = !document.getElementById('chk-gold').checked;
-            
-            myLineChart.update();
-        }
-
-        function bindCheckboxEvents() {
-            const ids = ['chk-total', 'chk-stock', 'chk-bond', 'chk-cash', 'chk-gold'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.onchange = updateLineChart;
-                }
-            });
-        }
-
-        // 로드 완료 직후 순차 비동기 제어 구조로 보완
         window.addEventListener('DOMContentLoaded', async () => {
-            bindCheckboxEvents(); 
-            // 💡 데이터를 먼저 가져온 뒤 뷰 모드를 세팅하여 트리맵이 온전한 데이터로 그려지도록 유도
-            await fetchDashboardData();
-            switchDashboardView('dashboard');
+            try {
+                await Promise.all([
+                    initExchangeRate(),
+                    preloadGoogleStockPrices(),
+                    fetchDashboardData()
+                ]);
+            } catch (e) {
+                console.error("초기 로딩 인터셉트 오류:", e);
+                await fetchDashboardData();
+            }
             
             window.addEventListener('resize', () => {
                 clearTimeout(window.resizeTimer);
