@@ -114,8 +114,8 @@
                 <div class="filter-item"><label>청약자</label>
                     <select id="filter-owner">
                         <option value="">전체</option>
+						<option value="man" selected>man</option>
                         <option value="been">been</option>
-                        <option value="man">man</option>
                     </select>
                 </div>
 				<div class="filter-item">
@@ -332,7 +332,7 @@
                     filterDate.value = '';
                     filterDate.type = 'text'; // month 타입에서 원복
                 }
-                document.getElementById('filter-owner').value = '';
+                document.getElementById('filter-owner').value = 'man';
                 document.getElementById('filter-brokerage').value = '';
                 document.getElementById('filter-name').value = '';
                 
