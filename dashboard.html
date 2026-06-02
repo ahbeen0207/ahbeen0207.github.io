@@ -250,7 +250,7 @@
         const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l';
         const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let myLineChart = null;
+        let myLineChart = null; // 전역 차트 변수 명확히 정의
         let currentChartData = { labels: [], total: [], stock: [], bond: [], cash: [], gold: [] };
         let calculatedAssets = { total: 0, stock: 0, bond: 0, cash: 0, gold: 0 };
 
@@ -437,12 +437,10 @@
             });
         }
 
-        // 🛠️ 월별 스냅샷 매핑 오류 완벽 수정 완료
         async function fetchGraphMonthlyData() {
-            const selectedYear = document.getElementById('sel-year').value; // "2026"
+            const selectedYear = document.getElementById('sel-year').value;
             const labels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
             
-            // 0 대신 null로 채워 데이터가 없는 달은 그래프 선이 유연하게 끊기거나 안 나오도록 처리
             let totalMonthly = Array(12).fill(null);
             let stockMonthly = Array(12).fill(null);
             let bondMonthly = Array(12).fill(null);
@@ -453,15 +451,13 @@
                 const { data: historyData, error } = await _supabase
                     .from('tb_monthly_snapshot')
                     .select('*')
-                    .like('snapshot_month', `${selectedYear}-%`); // 선택된 연도의 데이터만 정밀 타겟팅
+                    .like('snapshot_month', `${selectedYear}-%`);
 
                 if (error) throw error;
 
                 if (historyData && historyData.length > 0) {
                     historyData.forEach(row => {
                         const [sYear, sMonth] = row.snapshot_month.split('-').map(Number);
-                        
-                        // 캘린더 정규 매핑 규칙 적용 (예: 4월 데이터 -> 인덱스 3)
                         let targetMonthIdx = sMonth - 1; 
 
                         if (targetMonthIdx >= 0 && targetMonthIdx < 12) {
@@ -492,20 +488,21 @@
             const ctx = document.getElementById('lineChart');
             if (!ctx) return;
 
-            if (window.myLineChart) {
-                window.myLineChart.destroy();
+            // 🛠️ 수정: window.myLineChart가 아닌 선언된 전역 변수 myLineChart를 검사하고 파괴하도록 통일
+            if (myLineChart) {
+                myLineChart.destroy();
             }
 
-            // 이미지와 100% 동일한 선 색상 지정
             const colors = {
-                total: '#ff0000',  // 총자산: 빨강
-                stock: '#ff00bf',  // 주식: 핫핑크
-                bond: '#00b050',   // 채권: 초록
-                cash: '#7030a0',   // 현금: 보라
-                gold: '#0070c0'    // 기타(금은): 파랑
+                total: '#ff0000',
+                stock: '#ff00bf',
+                bond: '#00b050',
+                cash: '#7030a0',
+                gold: '#0070c0'
             };
 
-            window.myLineChart = new Chart(ctx, {
+            // 🛠️ 수정: 전역 변수 `myLineChart`에 직접 인스턴스 할당
+            myLineChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: currentChartData.labels,
@@ -520,7 +517,8 @@
                             pointBorderColor: colors.total,
                             pointRadius: 4,                 
                             tension: 0,
-                            spanGaps: false // 데이터가 없는 달(null)은 선을 잇지 않고 끊어지게 설정
+                            spanGaps: false,
+                            hidden: !document.getElementById('chk-total').checked
                         },
                         {
                             label: '주식',
@@ -532,7 +530,8 @@
                             pointBorderColor: colors.stock,
                             pointRadius: 3,
                             tension: 0,
-                            spanGaps: false
+                            spanGaps: false,
+                            hidden: !document.getElementById('chk-stock').checked
                         },
                         {
                             label: '채권',
@@ -544,7 +543,8 @@
                             pointBorderColor: colors.bond,
                             pointRadius: 3,
                             tension: 0,
-                            spanGaps: false
+                            spanGaps: false,
+                            hidden: !document.getElementById('chk-bond').checked
                         },
                         {
                             label: '현금',
@@ -556,7 +556,8 @@
                             pointBorderColor: colors.cash,
                             pointRadius: 3,
                             tension: 0,
-                            spanGaps: false
+                            spanGaps: false,
+                            hidden: !document.getElementById('chk-cash').checked
                         },
                         {
                             label: '기타(금은)',
@@ -568,7 +569,8 @@
                             pointBorderColor: colors.gold,
                             pointRadius: 3,
                             tension: 0,
-                            spanGaps: false
+                            spanGaps: false,
+                            hidden: !document.getElementById('chk-gold').checked
                         }
                     ]
                 },
@@ -594,26 +596,15 @@
                     },
                     scales: {
                         x: {
-                            grid: { 
-                                color: '#1a1a1a',          
-                                lineWidth: 1 
-                            },
-                            ticks: { 
-                                color: '#888888',          
-                                font: { size: 12, family: 'Pretendard' }
-                            }
+                            grid: { color: '#1a1a1a', lineWidth: 1 },
+                            ticks: { color: '#888888', font: { size: 12, family: 'Pretendard' } }
                         },
                         y: {
                             beginAtZero: true,
-                            // max 제한을 삭제하여 7억이 넘어도 상단이 짤리지 않고 자동 셋팅되도록 수정
-                            grid: { 
-                                color: '#1a1a1a',          
-                                lineWidth: 1 
-                            },
+                            grid: { color: '#1a1a1a', lineWidth: 1 },
                             ticks: {
-                                color: '#888888',          
+                                color: '#888888',
                                 font: { size: 12, family: 'Pretendard' },
-                                // 데이터 범위에 따라 자동으로 적절한 눈금 단위를 생성하도록 stepSize 제거
                                 callback: function(value) {
                                     return (value / 10000).toLocaleString() + ' 만원';
                                 }
@@ -624,14 +615,17 @@
             });
         }
 
-        // 체크박스 매칭 인덱스 순서 동기화 교정 완료
         function updateLineChart() {
+            // 🛠️ 수정: 이제 전역 변수 myLineChart가 인스턴스를 정확히 가리키므로 예외 처리 통과
             if(!myLineChart) return;
+            
             myLineChart.data.datasets[0].hidden = !document.getElementById('chk-total').checked;
             myLineChart.data.datasets[1].hidden = !document.getElementById('chk-stock').checked;
             myLineChart.data.datasets[2].hidden = !document.getElementById('chk-bond').checked;
             myLineChart.data.datasets[3].hidden = !document.getElementById('chk-cash').checked;
             myLineChart.data.datasets[4].hidden = !document.getElementById('chk-gold').checked;
+            
+            // 변경 사항을 반영해 차트 다시 그리기 실행
             myLineChart.update();
         }
 
