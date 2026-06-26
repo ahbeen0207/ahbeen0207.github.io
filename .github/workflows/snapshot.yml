@@ -22,8 +22,9 @@ jobs:
 
       - name: 필요한 라이브러리 가상서버에 다운로드
         run: |
+          rm -f package.json package-lock.json
           npm init -y
-          npm install @supabase/supabase-js node-fetch
+          npm install @supabase/supabase-js
 
       - name: 스크립트 실행 (깃허브 비밀 키를 소스코드 내부 env로 전달)
         env:
