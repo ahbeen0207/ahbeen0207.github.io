@@ -1,7 +1,15 @@
 // update-script.js
 const { createClient } = require('@supabase/supabase-js');
 //const fetch = require('node-fetch'); // node-fetch@2 버전을 사용하여 깔끔하게 require
-const axios = require('axios');
+// 💡 axios가 없으면 실행 가상 서버에서 실시간으로 강제 설치하는 안전장치
+let axios;
+try {
+    axios = require('axios');
+} catch (e) {
+    console.log("⚙️ 환경 격리로 인해 axios를 찾을 수 없어, 실시간 강제 설치를 진행합니다...");
+    require('child_process').execSync('npm install axios');
+    axios = require('axios');
+}
 
 // 환경 변수 세팅
 const SUPABASE_URL = process.env.SUPABASE_URL;
