@@ -1,6 +1,7 @@
 // update-script.js
 const { createClient } = require('@supabase/supabase-js');
-const fetch = require('node-fetch'); // node-fetch@2 버전을 사용하여 깔끔하게 require
+//const fetch = require('node-fetch'); // node-fetch@2 버전을 사용하여 깔끔하게 require
+const axios = require('axios');
 
 // 환경 변수 세팅
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -15,13 +16,22 @@ async function runAutomation() {
     try {
         console.log("🚀 1단계: GAS로부터 실시간 주가(구글파이낸스) 데이터 조회 중...");
         
-        const gasRes = await fetch(`${GAS_URL}?t=${new Date().getTime()}`);
-        const gasJson = await gasRes.json();
+        //const gasRes = await fetch(`${GAS_URL}?t=${new Date().getTime()}`);
+        //const gasJson = await gasRes.json();
+        
+        //if (!gasJson || gasJson.status !== "success" || !gasJson.stockPrices) {
+          //  throw new Error("GAS로부터 유효한 시세 데이터를 받지 못했습니다.");
+        //}
+        //const cachedGasData = gasJson.stockPrices;
+		// axios를 사용하여 GET 요청 (자동 리다이렉트 처리 및 JSON 파싱 지원)
+        const gasRes = await axios.get(`${GAS_URL}?t=${new Date().getTime()}`);
+        const gasJson = gasRes.data; // axios는 결과 데이터가 data 속성에 담깁니다.
         
         if (!gasJson || gasJson.status !== "success" || !gasJson.stockPrices) {
             throw new Error("GAS로부터 유효한 시세 데이터를 받지 못했습니다.");
         }
         const cachedGasData = gasJson.stockPrices;
+		
         console.log("✅ GAS 시세 받아오기 성공!");
 
         console.log("🚀 2단계: Supabase에서 거래 내역(`tb_stock_trade`) 및 예적금 가져오는 중...");
