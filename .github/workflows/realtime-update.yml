@@ -19,6 +19,7 @@ jobs:
 
       - name: 필요한 라이브러리 가상서버에 다운로드
         run: |
+          rm -f package.json package-lock.json  # 혹시 모를 기존 설정 파일 강제 삭제
           npm init -y
           npm install @supabase/supabase-js axios
 
