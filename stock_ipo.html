@@ -4,390 +4,439 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주식관리 시스템 - 공모주투자</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --vv-bg-main: #121212;
-            --vv-bg-card: #2c2c2c;
-            --vv-border: #3d3d3d;
-            --vv-text-main: rgba(255, 255, 255, 0.95);
-            --vv-text-muted: rgba(255, 255, 255, 0.65);
-            --vv-text-mint: #03dac6;
-            --point-blue: #3b82f6;
-            --point-green: #2ecc71;
-            --point-purple: #a855f7;
-            --sidebar-width: 160px;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&family=Noto+Sans+KR:wght=300;400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: #0E0E10;
+        }
+        .sidebar-bg {
+            background-color: #141416;
+            border-left: 1px solid #232329;
+            border-right: 1px solid #232329;
+        }
+        /* 중앙 80% 인터페이스의 가장 우측 경계선 스타일 정의 */
+        .content-frame {
+            border-right: 1px solid #232329;
+        }
+        .card-bg {
+            background-color: #18181C;
+            border: 1px solid #232329;
+        }
+        .input-bg {
+            background-color: #111114;
+            border: 1px solid #232329;
+        }
+        
+        /* 브라우저 메인 및 메인프레임 우측 전체 스크롤바 숨기기 기능 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: var(--vv-bg-main); color: var(--vv-text-main); font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; height: 100vh; padding: 20px 10%; overflow: hidden; }
+        /* 데이터 테이블 내부 전용 가로 스크롤바 스타일 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #141416;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2D2D35;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #3E3E4A;
+        }
 
-        /* 상단 네비게이션 바 */
-        .top-section { display: flex; gap: 12px; height: 60px; margin-bottom: 12px; flex-shrink: 0; }
-        .logo-box { width: var(--sidebar-width); height: 60px; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background-color: var(--vv-bg-card); padding: 2px; overflow: hidden; }
-        .logo-box a { color: var(--vv-text-mint); font-weight: bold; text-decoration: none; font-size: 16px; letter-spacing: 1px; }
-        .header-menu { flex: 1; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; background-color: var(--vv-bg-card); overflow: hidden; }
-        .header-menu a { flex: 1; display: flex; justify-content: center; align-items: center; text-decoration: none; color: var(--vv-text-main); font-weight: 600; border-right: 1px solid var(--vv-border); transition: 0.2s; }
-        .header-menu a.active { background-color: var(--point-blue); color: white; }
+        /* 페이지네이션 스타일 커스텀 */
+        .page-btn {
+            background-color: #141416;
+            border: 1px solid #232329;
+            color: #A1A1AA;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            min-width: 32px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .page-btn:hover:not(:disabled) {
+            background-color: #232329;
+            color: #ffffff;
+            border-color: #5850EC;
+        }
+        .page-btn.active {
+            background-color: #5850EC;
+            color: white;
+            border-color: #5850EC;
+            font-weight: bold;
+        }
+        .page-btn:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+            background-color: #0E0E10;
+        }
 
-        /* 메인 레이아웃 및 사이드바 */
-        .wrapper { display: flex; flex: 1; gap: 12px; overflow: hidden; }
-        nav { width: var(--sidebar-width); border: 1px solid var(--vv-border); border-radius: 12px; padding: 15px 10px 20px 10px; display: flex; flex-direction: column; background-color: var(--vv-bg-card); }
-        nav .nav-btn + .nav-btn { margin-top: 20px; }
-        .nav-btn { width: 100%; padding: 12px 0; background: var(--vv-bg-main); border: 1px solid var(--vv-border); color: var(--vv-text-main); border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .nav-btn.active { background-color: var(--point-green); border-color: var(--point-green); color: white; }
-		
-		.sidebar-logo-box { width: 70%; height: 70px; display: flex; justify-content: center; align-items: center; margin: 0 auto 25px auto; overflow: hidden; border-radius: 8px; border: 1px solid var(--vv-border); background-color: var(--vv-bg-main); }
-		.sidebar-logo-box img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* 콘텐츠 표시 영역 */
-        main { flex: 1; border: 1px solid var(--vv-border); border-radius: 12px; background-color: var(--vv-bg-card); padding: 24px; display: flex; flex-direction: column; overflow: hidden; }
-        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 15px; background: var(--vv-bg-main); padding: 15px 20px; border-radius: 8px; border: 1px solid var(--vv-border); margin-bottom: 20px; }
-        .filter-item { display: flex; align-items: center; gap: 8px; }
-        .filter-item label { color: var(--vv-text-mint); font-size: 13px; white-space: nowrap; }
-        .filter-item input, .filter-item select { background: var(--vv-bg-card); border: 1px solid var(--vv-border); color: white; padding: 6px 10px; border-radius: 4px; font-size: 13px;}
-        
-        .button-group { margin-left: auto; display: flex; gap: 8px; }
-        .btn { padding: 8px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 13px; }
-        .btn-blue { background-color: var(--point-blue); }
-        .btn-indigo { background-color: var(--point-purple); }
-
-        /* 데이터 테이블 스타일 */
-        .table-area { flex: 1; overflow: auto; border: 1px solid var(--vv-border); border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
-        th { position: sticky; top: 0; background: #333; color: var(--vv-text-mint); font-size: 12px; padding: 12px 8px; border-bottom: 2px solid var(--vv-border); text-align: center; }
-        td { padding: 10px 8px; border-bottom: 1px solid var(--vv-border); font-size: 13px; text-align: center; color: var(--vv-text-main); }
-        tr:hover { background-color: rgba(255,255,255,0.03); }
-		
-		.col-stock-name { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-		.col-profit { padding-right: 20px !important; text-align: right !important; }
-
-        /* 등록 및 수정 모달 팝업 */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; }
-        .modal-content { position: absolute; background: var(--vv-bg-card); width: 950px; border-radius: 12px; border: 1px solid var(--vv-border); left: 50%; top: 10%; transform: translateX(-50%); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-header { padding: 12px 16px; background: #333; border-bottom: 1px solid var(--vv-border); display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
-        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 12px; color: var(--vv-text-muted); }
-        .form-group input, .form-group select { background: var(--vv-bg-main); border: 1px solid var(--vv-border); color: white; padding: 8px; border-radius: 4px; font-size: 13px; }
-        .modal-footer { padding: 16px; border-top: 1px solid var(--vv-border); display: flex; justify-content: flex-end; gap: 8px; }
-
-        /* 테이블 하단 페이지네이션 */
-        .pagination-container { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 20px; padding: 10px 0; user-select: none; flex-shrink: 0; }
-        .page-btn { background-color: #333; border: 1px solid var(--vv-border); color: #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; min-width: 32px; text-align: center; transition: 0.2s; }
-        .page-btn:hover:not(:disabled) { background-color: #444; color: white; border-color: var(--vv-text-mint); }
-        .page-btn.active { background-color: var(--point-blue); color: white; border-color: var(--point-blue); font-weight: bold; }
-        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; background-color: #222; }
-
+        /* 크롬 달력 인풋 반전 */
         input[type="date"]::-webkit-calendar-picker-indicator,
-        input[type="month"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        input[type="month"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
     </style>
 </head>
-<body>
+<body class="text-[#E4E4E7] text-sm antialiased flex h-screen overflow-hidden bg-[#0E0E10]">
 
-    <div class="top-section">
-        <div class="logo-box">
-			<a href="select_page.html">HOME</a>
-		</div>
-        <div class="header-menu">
-            <a href="dashboard.html">자산현황</a>
-            <a href="stock.html">주식투자</a>
-            <a href="#" class="active">공모주투자</a>
-            <a href="deposit.html">예적금</a>
-            <a href="#" class="nav-item" onclick="location.reload(true); return false;">새로고침</a>
-        </div>
-    </div>
+    <!-- 좌측 10% 공백 유지 -->
+    <div class="w-[10%] h-full bg-[#0E0E10] shrink-0"></div>
 
-    <div class="wrapper">
-        <nav>
-			<div class="sidebar-logo-box"><img src="rabbit.jpg" alt="로고"></div>
-            <button id="btn-trade" class="nav-btn" onclick="switchView('trade')">공모주투자현황</button>
-            <button id="btn-status" class="nav-btn active" onclick="switchView('status')">거래내역</button>
-        </nav>
-
-        <main id="main-status">
-            <div id="filter-box" class="filter-container">
-                <div class="filter-item">
-                    <input type="text" id="filter-date" placeholder="조회월 선택" onfocus="(this.type='month')" onblur="if(!this.value)this.type='text'">
-                </div>
-                <div class="filter-item"><label>청약자</label>
-                    <select id="filter-owner">
-                        <option value="">전체</option>
-						<option value="man" selected>man</option>
-                        <option value="been">been</option>
-                    </select>
-                </div>
-				<div class="filter-item">
-					<label>주관사</label>
-					<input type="text" id="filter-brokerage" placeholder="주관사명 입력" onkeyup="if(window.event.keyCode==13){fetchIpoHistory(1)}">
-				</div>
-                <div class="filter-item"><label>공모주명</label><input type="text" id="filter-name"></div>
-                <div class="button-group">
-                    <button class="btn btn-blue" onclick="fetchIpoHistory(1)">검색</button>
-                    <button class="btn btn-indigo" onclick="openRegisterModal()">등록</button>
-                </div>
+    <!-- 중앙 80% 영역 -->
+    <div class="w-[80%] h-full flex shrink-0 content-frame">
+        
+        <!-- 좌측 사이드바: 너비 w-52, 내부 패딩 p-3 -->
+        <aside class="w-52 sidebar-bg flex flex-col justify-between p-3 shrink-0 h-full">
+            <div>
+                <!-- 상단 로고: 마진 mb-5, black_rabbit 로고 100% 확대 -->
+                <a href="select_page.html" class="flex items-center justify-center gap-2.5 mb-5 px-1 hover:opacity-85 transition">
+                    <div class="bg-[#5850EC] p-1.5 rounded-xl text-white shadow-lg shadow-[#5850EC]/25 shrink-0 flex items-center justify-center">
+                        <img src="black_rabbit.jpg" class="w-10 h-10 rounded-lg object-cover" onerror="this.src='rabbit.jpg'">
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-white">HOME</span>
+                </a>
+                
+                <!-- 네비게이션: 주식관리 스위칭 탭 구성 (mt-20 적용) -->
+                <nav class="space-y-0.5 mt-20">
+                    <button id="btn-status" class="w-full flex items-center gap-2 bg-[#232329] text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none" onclick="switchView('status')">
+                        <i data-lucide="layout-grid" class="w-5 h-5 text-[#5850EC]"></i> 거래내역
+                    </button>
+                    <button id="btn-trade" class="w-full flex items-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none" onclick="switchView('trade')">
+                        <i data-lucide="history" class="w-5 h-5"></i> 공모주투자현황
+                    </button>
+                </nav>
             </div>
 
-            <div class="table-area">
-                <table id="data-table">
-                    <thead>
-                        <tr>
-                            <th>청약자</th>
-                            <th>공모주명</th>
-                            <th>주관사</th>
-                            <th>청약일</th>
-                            <th>상장일</th>
-                            <th>배정수량</th>
-                            <th>공모가</th>
-                            <th>매도가</th>
-                            <th>매도수수료세금</th>
-                            <th>증권사수수료</th>
-                            <th>대출이자</th>
-                            <th class="col-profit">수익금</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body">
-                        <tr><td colspan="12">공모주 투자 데이터를 불러오는 중입니다.</td></tr>
-                    </tbody>
-                </table>
+            <!-- 하단 정보: Supabase 로그인 사용자 연동 (U아이콘 + 계정명) -->
+            <div class="border-t border-[#232329] pt-2 flex items-center gap-2 px-1">
+                <div class="w-8 h-8 rounded-full bg-[#5850EC]/20 border border-[#5850EC]/40 flex items-center justify-center text-[#A5A6F6] text-sm font-bold shrink-0">
+                    U
+                </div>
+                <div class="min-w-0">
+                    <p id="user-email" class="text-sm font-semibold text-white truncate">Loading...</p>
+                </div>
             </div>
-            <div id="pagination" class="pagination-container"></div>
-        </main>
+        </aside>
 
-        <main id="main-trade" style="display: none;">
-            <div style="background: var(--vv-bg-card); border: 1px solid var(--vv-border); padding: 15px; border-radius: 8px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; background: var(--vv-bg-main);">
-                    <thead>
-                        <tr>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">1월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">2월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">3월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">4월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">5월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">6월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">7월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">8월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">9월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">10월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">11월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">12월</th>
-                            <th style="border: 1px solid var(--vv-border); padding: 8px; font-weight: normal; color: var(--vv-text-main); font-size: 13px;">총수익</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td id="m1-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m2-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m3-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m4-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m5-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m6-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m7-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m8-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m9-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m10-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m11-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="m12-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px;">0</td>
-                            <td id="total-year-profit" style="border: 1px solid var(--vv-border); padding: 8px; font-size: 13px; font-weight: bold;">0</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- 우측 메인 영역 -->
+        <main class="flex-1 flex flex-col overflow-y-auto bg-[#0E0E10] h-full no-scrollbar">
+            
+            <!-- 상단 헤더: 6개 균등 분할 네비게이션 (세로 크기 h-20, 폰트 text-lg) -->
+            <header class="h-20 border-b border-[#232329] px-2 flex items-center bg-[#0E0E10]/50 backdrop-blur-md sticky top-0 z-10 shrink-0">
+                <div class="grid grid-cols-6 gap-1.5 w-full">
+                    <a href="dashboard.html" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> 자산 현황
+                    </a>
+                    <a href="stock.html" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i> 주식투자
+                    </a>
+                    <a href="#" class="flex items-center justify-center gap-2 bg-[#232329] text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="file-text" class="w-5 h-5 text-[#5850EC]"></i> 공모주투자
+                    </a>
+                    <a href="deposit.html" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="landmark" class="w-5 h-5"></i> 예적금
+                    </a>
+                    <a href="#" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition" onclick="location.reload(true); return false;">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i> 새로고침
+                    </a>
+                    <div class="flex items-center justify-center gap-2 text-slate-400 px-2 py-2.5 rounded-lg text-lg font-medium">
+                        <i data-lucide="clock" class="w-5 h-5"></i> <span id="last-updated-text">-</span>
+                    </div>
+                </div>
+            </header>
 
-                <div style="background: var(--vv-bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--vv-border); flex: 1; display: flex; flex-direction: column;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-						<div style="display: flex; gap: 8px;">
-							<select id="chart-year-select" onchange="updateDashboardStats()" style="background: #111; color: white; border: 1px solid #333; padding: 5px 10px; border-radius: 4px; outline: none; font-size: 13px;">
-								<option value="2026">2026년</option>
-								<option value="2025">2025년</option>
-							</select>
-							<select id="chart-owner-select" onchange="updateDashboardStats()" style="background: #111; color: white; border: 1px solid #333; padding: 5px 10px; border-radius: 4px; outline: none; font-size: 13px;">
-								<option value="man" selected>man</option>
-								<option value="been">been</option>
-								<option value="">전체</option>
-							</select>
-						</div>
-						
-						<span style="color: var(--vv-text-muted); font-size: 13px; font-weight: bold;">공모주 실시간 자산 현황 그래프</span>
-						
-						<div style="width: 155px;"></div>
-					</div>
-                    <div style="background: var(--vv-bg-card); padding: 10px; flex: 1; min-height: 0;">
-                        <canvas id="monthlyChart"></canvas>
+            <!-- 메인 콘텐츠 영역: 패딩 p-4, 내부 간격 space-y-3 제거 -->
+            <div class="p-4 w-full flex-1 flex flex-col">
+                
+                <!-- 1. 거래내역 뷰 -->
+                <div id="main-status" class="space-y-3 w-full flex-1 flex flex-col">
+                    
+                    <!-- 필터 카드 -->
+                    <div id="filter-box" class="card-bg py-5 px-3 rounded-lg shadow-xl flex flex-wrap items-center gap-3 text-sm shrink-0">
+                        <div class="flex items-center gap-1">
+                            <input type="month" id="filter-date" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC] w-36">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">청약자</label>
+                            <select id="filter-owner" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC]">
+                                <option value="">전체</option>
+                                <option value="man" selected>man</option>
+                                <option value="been">been</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[120px] flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">주관사</label>
+                            <input type="text" id="filter-brokerage" placeholder="주관사명 입력" onkeyup="if(window.event.keyCode==13){fetchIpoHistory(1)}" class="w-full text-xs input-bg rounded-md px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#5850EC]">
+                        </div>
+                        <div class="flex-1 min-w-[120px] flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">공모주명</label>
+                            <input type="text" id="filter-name" placeholder="공모주명 입력" class="w-full text-xs input-bg rounded-md px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#5850EC]">
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <button class="bg-[#5850EC] hover:bg-[#4B43D3] text-white text-xs font-semibold px-4 py-3 rounded-md transition flex items-center justify-center gap-1 focus:outline-none" onclick="fetchIpoHistory(1)">
+                                <i data-lucide="search" class="w-3.5 h-3.5"></i> 검색
+                            </button>
+                            <button class="bg-[#10B981] hover:bg-[#7C3AED] text-white text-xs font-semibold px-4 py-3 rounded-md transition flex items-center justify-center gap-1 focus:outline-none" onclick="openRegisterModal()">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> 등록
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 데이터 리스트 카드 -->
+                    <div class="card-bg p-4 rounded-xl shadow-xl flex flex-col overflow-hidden flex-1">
+                        <div class="overflow-x-auto custom-scrollbar text-sm flex-1">
+                            <table id="data-table" class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead class="bg-[#141416] text-slate-400 uppercase font-medium border-b border-[#232329]">
+                                    <tr>
+                                        <th class="p-2.5">청약자</th>
+                                        <th class="p-2.5 text-left">공모주명</th>
+                                        <th class="p-2.5">주관사</th>
+                                        <th class="p-2.5">청약일</th>
+                                        <th class="p-2.5">상장일</th>
+                                        <th class="p-2.5 text-right">배정수량</th>
+                                        <th class="p-2.5 text-right">공모가</th>
+                                        <th class="p-2.5 text-right">매도가</th>
+                                        <th class="p-2.5 text-right">매도수수료세금</th>
+                                        <th class="p-2.5 text-right">증권사수수료</th>
+                                        <th class="p-2.5 text-right">대출이자</th>
+                                        <th class="p-2.5 text-right pr-10">수익금</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-[#232329] text-slate-300">
+                                    <tr><td colspan="12" class="p-4 text-center">공모주 투자 데이터를 불러오는 중입니다.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="pagination" class="flex justify-center items-center gap-1 mt-4 pt-3 border-t border-[#232329] user-select-none"></div>
+                    </div>
+                </div>
+
+                <!-- 2. 공모주투자현황 뷰 -->
+                <div id="main-trade" class="space-y-4 w-full flex-1 flex flex-col" style="display: none;">
+                    
+                    <!-- 1~12월 월별 표 -->
+                    <div class="card-bg p-4 rounded-xl shadow-xl overflow-x-auto custom-scrollbar py-5">
+                        <table class="w-full text-center border-collapse whitespace-nowrap text-sm border border-[#232329]">
+                            <thead class="bg-[#141416] text-slate-400 font-medium border-b border-[#232329]">
+                                <tr>
+                                    <th class="p-2.5 border-r border-[#232329]">1월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">2월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">3월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">4월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">5월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">6월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">7월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">8월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">9월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">10월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">11월</th>
+                                    <th class="p-2.5 border-r border-[#232329]">12월</th>
+                                    <th class="p-2.5">총수익</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-slate-300">
+                                <tr class="border-b border-[#232329]">
+                                    <td id="m1-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m2-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m3-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m4-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m5-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m6-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m7-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m8-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m9-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m10-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m11-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="m12-profit" class="p-2.5 border-r border-[#232329]">0</td>
+                                    <td id="total-year-profit" class="p-2.5 font-bold text-slate-300">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 실시간 자산 현황 그래프 카드 -->
+                    <div class="card-bg p-4 rounded-xl shadow-xl flex flex-col flex-1 overflow-hidden">
+                        <div class="flex flex-wrap justify-between items-center mb-4 gap-2 text-xs">
+                            <div class="flex gap-2">
+                                <select id="chart-year-select" onchange="updateDashboardStats()" class="bg-[#141416] text-slate-300 rounded-md px-2.5 py-1.5 border border-[#232329] focus:outline-none">
+                                    <option value="2026">2026년</option>
+                                    <option value="2025">2025년</option>
+                                </select>
+                                <select id="chart-owner-select" onchange="updateDashboardStats()" class="bg-[#141416] text-slate-300 rounded-md px-2.5 py-1.5 border border-[#232329] focus:outline-none">
+                                    <option value="man" selected>man</option>
+                                    <option value="been">been</option>
+                                    <option value="">전체</option>
+                                </select>
+                            </div>
+                            
+                            <!-- <span class="text-slate-400 font-bold">공모주 실시간 자산 현황 그래프</span> -->
+                            
+                            <div class="w-10"></div>
+                        </div>
+                        <div class="flex-1 min-h-[300px]">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="register-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title" style="color: var(--vv-text-mint); font-size: 15px;">공모주 투자내역 등록</h3>
-                <button onclick="closeRegisterModal()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">&times;</button>
+    <!-- 등록/수정 모달 -->
+    <div id="register-modal" class="hidden fixed inset-0 bg-black/60 z-50 overflow-y-auto flex items-center justify-center p-4">
+        <div id="draggable-modal" class="card-bg rounded-xl shadow-2xl w-full max-w-4xl border border-[#232329] flex flex-col overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="px-4 py-3 bg-[#141416] border-b border-[#232329] flex items-center justify-between cursor-move" id="modal-header-drag">
+                <h2 id="modal-title" class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-[#5850EC]"></i> 공모주 투자내역 등록
+                </h2>
+                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white transition focus:outline-none">&times;</button>
             </div>
             
             <input type="hidden" id="form-id">
-
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>청약자</label>
-                    <select id="form-account-owner"><option value="been">been</option><option value="man">man</option></select>
+            <div class="p-4 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">청약자</label><select id="form-account-owner" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"><option value="man">man</option><option value="been">been</option></select></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">공모주명</label><input type="text" id="form-stock-name" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">주관사</label><input type="text" id="form-broker" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">공모가</label><input type="text" id="form-offering-price" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">청약일</label><input type="date" id="form-subscription-date" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">환불일</label><input type="date" id="form-refund-date" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">상장일</label><input type="date" id="form-listing-date" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">매도일</label><input type="date" id="form-sell-date" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">증거금</label><input type="text" id="form-deposit-amount" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">청약수량</label><input type="text" id="form-subscription-qty" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">배정수량</label><input type="text" id="form-allocated-qty" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">청약수수료</label><input type="text" id="form-sub-fee" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">매도가</label><input type="text" id="form-selling-price" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">매도수수료세금</label><input type="text" id="form-tax-fee" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
+                    <div class="form-group"><label class="block text-xs text-slate-400 mb-1">대출이자</label><input type="text" id="form-loan-interest" value="0" oninput="formatNumberInput(this)" class="w-full bg-[#141416] text-white rounded-md px-3 py-2 border border-[#232329] focus:border-[#5850EC]"></div>
                 </div>
-                <div class="form-group"><label>공모주명</label><input type="text" id="form-stock-name"></div>
-                <div class="form-group"><label>주관사</label><input type="text" id="form-broker"></div>
-                <div class="form-group"><label>공모가</label><input type="text" id="form-offering-price" value="0" oninput="formatNumberInput(this)"></div>
-
-                <div class="form-group"><label>청약일</label><input type="date" id="form-subscription-date"></div>
-                <div class="form-group"><label>환불일</label><input type="date" id="form-refund-date"></div>
-                <div class="form-group"><label>상장일</label><input type="date" id="form-listing-date"></div>
-                <div class="form-group"><label>매도일</label><input type="date" id="form-sell-date"></div>
-
-                <div class="form-group"><label>증거금</label><input type="text" id="form-deposit-amount" value="0" oninput="formatNumberInput(this)"></div>
-                <div class="form-group"><label>청약수량</label><input type="text" id="form-subscription-qty" value="0" oninput="formatNumberInput(this)"></div>
-                <div class="form-group"><label>배정수량</label><input type="text" id="form-allocated-qty" value="0" oninput="formatNumberInput(this)"></div>
-                <div class="form-group"><label>증권사수수료</label><input type="text" id="form-sub-fee" value="0" oninput="formatNumberInput(this)"></div>
-
-                <div class="form-group"><label>매도가</label><input type="text" id="form-selling-price" value="0" oninput="formatNumberInput(this)"></div>
-                <div class="form-group"><label>매도수수료</label><input type="text" id="form-tax-fee" value="0" oninput="formatNumberInput(this)"></div>
-                <div class="form-group"><label>대출이자</label><input type="text" id="form-loan-interest" value="0" oninput="formatNumberInput(this)"></div>
-                <div class="form-group" style="visibility: hidden;"><label>공백</label><input type="text"></div>
             </div>
-            <div class="modal-footer">
-                <button id="btn-delete-ipo" class="btn" style="background:#e74c3c; margin-right: auto; display: none;" onclick="deleteIpoInvestment()">삭제</button>
-                <button class="btn" style="background:#555;" onclick="closeRegisterModal()">취소</button>
-                <button class="btn btn-blue" onclick="saveIpoInvestment()">저장</button>
+            <div class="px-4 py-3 bg-[#141416] border-t border-[#232329] flex justify-end gap-2">
+                <button id="btn-delete-ipo" class="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 mr-auto" onclick="deleteIpoData()" style="display: none;">삭제</button>
+                <button class="px-4 py-2 bg-[#232329] text-white rounded-md text-sm hover:bg-[#303038]" onclick="closeRegisterModal()">취소</button>
+                <button class="px-4 py-2 bg-[#5850EC] text-white rounded-md text-sm hover:bg-[#4B43D3]" onclick="saveIpoData()">저장</button>
             </div>
         </div>
     </div>
 
     <script>
-        // =========================================================================
-        // 1. Supabase 연동 클라이언트 및 글로벌 변수 선언 영역
-        // =========================================================================
+        // 1. Supabase & 전역 상태 설정 (기존 소스 완벽 복구)
         const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l'; 
-        
+        const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l';
         const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        const PAGE_SIZE = 15;          // 데이터 그리드 테이블 출력 단위 행 개수
-        let currentFilteredData = [];  // 통계판 연동에 활용되는 전체 데이터 백업 스토리지 배열
+        const PAGE_SIZE = 15; // 한 페이지당 표시할 행 수
+        let currentFilteredData = []; // 대시보드 통계용 전역 데이터
 
-        /**
-         * 실시간 입력창 천 단위 콤마 포맷팅 헬퍼 함수
-         * @param {HTMLElement} el - input 요소 변수
-         */
-        function formatNumberInput(el) {
-            // 숫자만 남기기
-            let value = el.value.replace(/[^0-9]/g, '');
-            if (!value || value === '0') {
-                el.value = '0';
-                return;
+        // 2. 화면 초기화 및 탭 전환
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lucide 아이콘 초기화
+            if (window.lucide) lucide.createIcons();
+            
+            // 날짜 필터 기본 설정 및 첫 화면 로드 (기존 메인 데이터 복구 핵심)
+            const filterDateInput = document.getElementById('filter-date');
+            if (filterDateInput) {
+                filterDateInput.value = ''; // 초기에는 공백으로 전체 데이터가 나오도록 설정
             }
-            // 천 단위 콤마 추가
-            el.value = Number(value).toLocaleString();
-        }
+            
+            // 기본 뷰로 '거래내역(status)' 설정 및 데이터 호출
+            switchView('status');
+
+            // 마지막 데이터 업데이트 시간 표시
+            updateLastUpdatedTime();
+        });
 
         /**
-         * 포맷터 적용 값을 일반 숫자로 환원해주는 헬퍼 함수
-         * @param {string} id - 엘리먼트 아이디값
+         * 헤더의 마지막 데이터 업데이트 시간을 현재 시각으로 갱신하는 함수
          */
-        function getRawNumberValue(id) {
-            const val = document.getElementById(id).value;
-            return parseFloat(val.replace(/,/g, '')) || 0;
+        function updateLastUpdatedTime() {
+            const el = document.getElementById('last-updated-text');
+            if (!el) return;
+            const now = new Date();
+            el.innerText = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        /**
-         * 일반 숫자를 포맷된 스트링으로 주입해주는 헬퍼 함수
-         * @param {string} id - 엘리먼트 아이디값
-         * @param {number} num - 주입할 숫자값
-         */
-        function setFormattedNumberValue(id, num) {
-            const target = document.getElementById(id);
-            if (target) {
-                const val = Number(num || 0);
-                target.value = val.toLocaleString();
-            }
-        }
-
-        /**
-         * 화면단 서브메뉴 전환 처리기 함수
-         * @param {string} viewName - 'status'(거래내역) 또는 'trade'(공모주투자현황)
-         */
         function switchView(viewName) {
-            const mainStatus = document.getElementById('main-status');
-            const mainTrade = document.getElementById('main-trade');
+            const statusMain = document.getElementById('main-status');
+            const tradeMain = document.getElementById('main-trade');
             const btnStatus = document.getElementById('btn-status');
             const btnTrade = document.getElementById('btn-trade');
 
             if (viewName === 'status') {
-                mainStatus.style.display = 'flex';
-                mainTrade.style.display = 'none';
-                btnStatus.classList.add('active');
-                btnTrade.classList.remove('active');
+                if (statusMain) statusMain.style.display = 'flex';
+                if (tradeMain) tradeMain.style.display = 'none';
                 
-                // [수정 사항] 거래내역 메뉴 진입 시 상단 검색 필터 조건 입력값 초기화
-                const filterDate = document.getElementById('filter-date');
-                if (filterDate) {
-                    filterDate.value = '';
-                    filterDate.type = 'text'; // month 타입에서 원복
-                }
-                document.getElementById('filter-owner').value = 'man';
-                document.getElementById('filter-brokerage').value = '';
-                document.getElementById('filter-name').value = '';
+                // 버튼 스타일 활성화/비활성화 제어
+                btnStatus.className = "w-full flex items-center gap-2 bg-[#232329] text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
+                btnTrade.className = "w-full flex items-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
                 
-                // 초기화된 필터 상태를 기준으로 1페이지 목록 리로드
                 fetchIpoHistory(1);
-                
             } else if (viewName === 'trade') {
-                mainStatus.style.display = 'none';
-                mainTrade.style.display = 'flex';
-                btnStatus.classList.remove('active');
-                btnTrade.classList.add('active');
+                if (statusMain) statusMain.style.display = 'none';
+                if (tradeMain) tradeMain.style.display = 'flex';
                 
-                // 통계 대시보드로 이동 시 데이터 동기화 파이프라인 가동
-                updateDashboardStats();
+                btnStatus.className = "w-full flex items-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
+                btnTrade.className = "w-full flex items-center gap-2 bg-[#232329] text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
+                
+                loadAllDataForDashboard();
             }
+            if (window.lucide) lucide.createIcons();
         }
 
-        // =========================================================================
-        // 2. 데이터베이스 CRUD 및 필터 연동 기능 제어 비즈니스 로직
-        // =========================================================================
-        
-        /**
-         * 필터링 조건문 반영을 통한 데이터 베이스 목록 페이징 요청 제어 함수
-         * @param {number} page - 탐색 대상 페이지 번호
-         */
+        // 3. 거래내역 조회 및 원래 페이징 로직 결합
         async function fetchIpoHistory(page = 1) {
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = `<tr><td colspan="12">Supabase에서 데이터를 가져오는 중입니다...</td></tr>`;
-
+            if (!tbody) return;
+            
+            tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-slate-400">데이터를 불러오는 중입니다...</td></tr>`;
+            
             try {
-                const filterDate = document.getElementById('filter-date').value; 
-                const filterOwner = document.getElementById('filter-owner').value;
-                const filterBrokerage = document.getElementById('filter-brokerage').value;
-                const filterName = document.getElementById('filter-name').value;
-
+                const filterDate = document.getElementById('filter-date')?.value || '';
+                const filterOwner = document.getElementById('filter-owner')?.value || '';
+                const filterBrokerage = document.getElementById('filter-brokerage')?.value || '';
+                const filterName = document.getElementById('filter-name')?.value || '';
+                
                 let query = clientSupabase
                     .from('tb_ipo_investment')
                     .select('*', { count: 'exact' });
-
-                // 동적 파라미터 필터링 인젝션 처리
-				if (filterOwner) {
-					query = query.eq('account_owner', filterOwner);
-				}
-				if (filterBrokerage) {
-					// eq(일치)에서 ilike(포함 검색) 조건으로 변경
-					query = query.ilike('broker', `%${filterBrokerage}%`);
-				}
-				if (filterName) {
-					query = query.ilike('stock_name', `%${filterName}%`);
-				}
-                // 월 경계선 조회 시 발생하는 오류를 수정한 다음 달 01일 미만(<) 처리 조건 로직
+                
+                // 검색 조건 필터 적용
+                if (filterOwner) {
+                    query = query.eq('account_owner', filterOwner);
+                }
+                if (filterBrokerage) {
+                    query = query.ilike('broker', `%${filterBrokerage}%`);
+                }
+                if (filterName) {
+                    query = query.ilike('stock_name', `%${filterName}%`);
+                }
                 if (filterDate) {
                     const [year, month] = filterDate.split('-');
                     const startRange = `${filterDate}-01`;
-                    
                     let nextYear = parseInt(year);
                     let nextMonth = parseInt(month) + 1;
                     if (nextMonth > 12) {
@@ -395,32 +444,29 @@
                         nextYear += 1;
                     }
                     const endRange = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
-                    
                     query = query.gte('subscription_date', startRange).lt('subscription_date', endRange);
                 }
-
-                // 시작 행 및 타겟 종료 행 오프셋 연산식 계산
+                
+                // 누락되었던 오프셋 및 범위 연산 완벽 정정
                 const from = (page - 1) * PAGE_SIZE;
                 const to = from + PAGE_SIZE - 1;
                 
                 const { data, count, error } = await query
                     .order('subscription_date', { ascending: false })
                     .range(from, to);
-
+                    
                 if (error) throw error;
-
-                // 1페이지 호출 연동 시 백그라운드 데이터 메모리 캐시 동기화 동시 구동
-                if (page === 1) {
-                    await loadAllDataForDashboard();
-                }
-
+                
+                tbody.innerHTML = '';
+                
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="12">조회된 공모주 투자 내역이 없습니다.</td></tr>`;
-                    document.getElementById('pagination').innerHTML = '';
+                    tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-slate-500">조회된 내역이 없습니다.</td></tr>`;
+                    renderPagination(0, page);
+                    updateLastUpdatedTime();
                     return;
                 }
-
-                tbody.innerHTML = '';
+                
+                // 테이블 드로잉 및 계산 공식 (stock_ipo (2).html 방식 적용)
                 data.forEach(item => {
                     const allocatedQty = Number(item.allocated_qty || 0);
                     const offeringPrice = Number(item.offering_price || 0);
@@ -428,176 +474,211 @@
                     const taxAndSellFee = Number(item.tax_and_sell_fee || 0);
                     const subscriptionFee = Number(item.subscription_fee || 0);
                     const loanInterest = Number(item.loan_interest || 0);
-
-                    // 손수익 최종 가치 산출 연산 공식
+                    
+                    // 기존 코드의 정확한 수익금 공식 매칭
                     let profit = 0;
+                    let profitText = '-';
+                    let profitColor = 'text-slate-300';
+                    
                     if (sellingPrice > 0) {
                         profit = ((sellingPrice - offeringPrice) * allocatedQty) - taxAndSellFee - subscriptionFee - loanInterest;
+                        profitText = profit >= 0 ? `+${profit.toLocaleString()}` : profit.toLocaleString();
+                        profitColor = profit >= 0 ? 'text-[#f87171]' : 'text-[#60a5fa]';
+                    } else if (allocatedQty > 0 || subscriptionFee > 0 || loanInterest > 0) {
+                        // 상장 전이거나 매도 전이라도 비용이 정산된 경우 처리
+                        profit = -(taxAndSellFee + subscriptionFee + loanInterest);
+                        if (profit < 0) {
+                            profitText = profit.toLocaleString();
+                            profitColor = 'text-[#60a5fa]';
+                        }
                     }
-
-                    const profitColor = profit > 0 ? 'var(--point-green)' : (profit < 0 ? '#e74c3c' : 'var(--vv-text-main)');
-                    const profitText = profit >= 0 ? `+${profit.toLocaleString()}` : profit.toLocaleString();
-
-                    // Object 구조체를 가공하기 위해 안전하게 이스케이프 포맷 변환 인코딩
-                    const itemJson = encodeURIComponent(JSON.stringify(item));
                     
                     const tr = document.createElement('tr');
+                    tr.className = "hover:bg-[#1C1C20] transition border-b border-[#232329]";
                     tr.innerHTML = `
-                        <td>${item.account_owner}</td>
-                        <td class="col-stock-name" title="${item.stock_name}" 
-                            style="cursor: pointer; text-decoration: underline; color: var(--point-blue);" 
-                            onclick="openEditModal('${itemJson}')">
-                            ${item.stock_name}
+                        <td class="p-2.5 text-center text-slate-300">${item.account_owner || '-'}</td>
+                        <td class="p-2.5 text-left font-medium text-white max-w-[200px] truncate underline decoration-[#5850EC] cursor-pointer hover:text-indigo-400" onclick="openEditModal('${encodeURIComponent(JSON.stringify(item))}')">
+                            ${item.stock_name || '-'}
                         </td>
-                        <td>${item.broker}</td>
-                        <td>${item.subscription_date || '-'}</td>
-                        <td>${item.listing_date || '-'}</td>
-                        <td>${allocatedQty.toLocaleString()}</td>
-                        <td>${offeringPrice.toLocaleString()}</td>
-                        <td>${sellingPrice > 0 ? sellingPrice.toLocaleString() : '-'}</td>
-                        <td>${taxAndSellFee.toLocaleString()}</td>
-                        <td>${subscriptionFee.toLocaleString()}</td>
-                        <td>${loanInterest.toLocaleString()}</td>
-                        <td class="col-profit" style="color: ${profitColor}; font-weight: bold;">${profitText}</td>
+                        <td class="p-2.5 text-slate-300">${item.broker || '-'}</td>
+                        <td class="p-2.5 text-center text-slate-400">${item.subscription_date || '-'}</td>
+                        <td class="p-2.5 text-center text-slate-400">${item.listing_date || '-'}</td>
+                        <td class="p-2.5 text-right text-slate-300">${allocatedQty.toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-300">${offeringPrice.toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-300">${sellingPrice > 0 ? sellingPrice.toLocaleString() : '-'}</td>
+                        <td class="p-2.5 text-right text-slate-400">${taxAndSellFee.toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-400">${subscriptionFee.toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-400">${loanInterest.toLocaleString()}</td>
+                        <td class="p-2.5 text-right pr-10 font-bold ${profitColor}">${profitText}</td>
                     `;
                     tbody.appendChild(tr);
                 });
-
+                
+                // 페이지네이션 제어판 출력
                 renderPagination(count, page);
 
+                // 마지막 데이터 업데이트 시간 갱신
+                updateLastUpdatedTime();
+                
             } catch (err) {
-                console.error("데이터 로드 오류:", err);
-                tbody.innerHTML = `<tr><td colspan="12" style="color: #e74c3c;">데이터를 가져오는 중 오류가 발생했습니다: ${err.message}</td></tr>`;
+                console.error("오류 발생:", err);
+                tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-500">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>`;
+                renderPagination(0, page);
             }
         }
 
-        /**
-         * 통계 연동용 실시간 원본 전체 레코드 스토리지 동기화 함수
-         */
+        // 4. stock.html과 동일한 페이지네이션 UI 함수 (최대 5개 버튼 윈도잉 + 처음/끝 이동)
+        function renderPagination(totalCount, currentPage) {
+            const pagination = document.getElementById('pagination');
+            if (!pagination) return;
+
+            const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+            let html = ''; const maxButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+            if (endPage - startPage + 1 < maxButtons) startPage = Math.max(1, endPage - maxButtons + 1);
+
+            html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="fetchIpoHistory(1)">«</button>`;
+            html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="fetchIpoHistory(${Math.max(1, currentPage - 1)})">‹</button>`;
+            for (let i = startPage; i <= endPage; i++) {
+                if (i > 0) html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="fetchIpoHistory(${i})">${i}</button>`;
+            }
+            html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="fetchIpoHistory(${Math.min(totalPages, currentPage + 1)})">›</button>`;
+            html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="fetchIpoHistory(${totalPages})">»</button>`;
+            pagination.innerHTML = html;
+        }
+
+        // 5. 검색 조건 초기화 기능
+        function resetFilters() {
+            const elements = ['filter-date', 'filter-owner', 'filter-brokerage', 'filter-name'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            fetchIpoHistory(1);
+        }
+
+        // 6. 통계 탭(대시보드) 전체 조회용 로직 복구
         async function loadAllDataForDashboard() {
             try {
                 const { data, error } = await clientSupabase
                     .from('tb_ipo_investment')
-                    .select('*');
-                if (!error && data) {
-                    currentFilteredData = data;
-                    if(document.getElementById('main-trade').style.display !== 'none') {
-                        updateDashboardStats();
+                    .select('*')
+                    .order('subscription_date', { ascending: true });
+                    
+                if (error) throw error;
+                
+                currentFilteredData = data || [];
+                updateDashboardStats();
+
+                // 마지막 데이터 업데이트 시간 갱신
+                updateLastUpdatedTime();
+            } catch (err) {
+                console.error("통계 로드 실패:", err);
+            }
+        }
+
+        function updateDashboardStats() {
+            const selectedYear = document.getElementById('chart-year-select')?.value;
+            const selectedOwner = document.getElementById('chart-owner-select')?.value;
+            const monthlyProfits = Array(12).fill(0);
+            let totalYearProfit = 0;
+
+            currentFilteredData.forEach(item => {
+                if (!item.subscription_date) return;
+                const date = new Date(item.subscription_date);
+
+                const isYearMatch = date.getFullYear().toString() === selectedYear;
+                const isOwnerMatch = !selectedOwner || item.account_owner === selectedOwner;
+
+                if (isYearMatch && isOwnerMatch) {
+                    const month = date.getMonth();
+
+                    const allocatedQty = Number(item.allocated_qty || 0);
+                    const offeringPrice = Number(item.offering_price || 0);
+                    const sellingPrice = Number(item.selling_price || 0);
+                    const taxAndSellFee = Number(item.tax_and_sell_fee || 0);
+                    const subscriptionFee = Number(item.subscription_fee || 0);
+                    const loanInterest = Number(item.loan_interest || 0);
+
+                    if (sellingPrice > 0) {
+                        const profit = ((sellingPrice - offeringPrice) * allocatedQty) - taxAndSellFee - subscriptionFee - loanInterest;
+                        monthlyProfits[month] += profit;
+                        totalYearProfit += profit;
                     }
                 }
-            } catch (e) {
-                console.error("대시보드 원본 데이터 연동 실패:", e);
+            });
+
+            // 상단 그리드 월별 이익 매핑 및 색상 제어
+            for (let i = 1; i <= 12; i++) {
+                const cell = document.getElementById(`m${i}-profit`);
+                if (cell) {
+                    const val = monthlyProfits[i - 1];
+                    cell.innerText = val !== 0 ? val.toLocaleString() : '0';
+                    cell.className = "p-2.5 border-r border-[#232329] " + (val > 0 ? "text-[#f87171]" : (val < 0 ? "text-[#60a5fa]" : "text-slate-300"));
+                }
+            }
+
+            const totalCell = document.getElementById('total-year-profit');
+            if (totalCell) {
+                totalCell.innerText = totalYearProfit.toLocaleString();
+                totalCell.className = "p-2.5 font-bold " + (totalYearProfit > 0 ? "text-[#f87171]" : (totalYearProfit < 0 ? "text-[#60a5fa]" : "text-slate-300"));
+            }
+
+            // 차트 인스턴스 업데이트
+            if (window.myChart) {
+                window.myChart.data.datasets[0].data = monthlyProfits;
+                window.myChart.update();
+                window.myChart.resize();
             }
         }
 
-        /**
-         * 선택된 연도 데이터 추출을 기반으로 대시보드 통계판 및 Chart 인스턴스 갱신 함수
-         */
-        function updateDashboardStats() {
-			const selectedYear = document.getElementById('chart-year-select').value;
-			const selectedOwner = document.getElementById('chart-owner-select').value;
-			const monthlyProfits = Array(12).fill(0);
-			let totalYearProfit = 0;
-
-			currentFilteredData.forEach(item => {
-				if (!item.subscription_date) return;
-				const date = new Date(item.subscription_date);
-				
-				// [수정] selectedOwner가 빈 값('')인 경우 전체 조회가 되도록 조건문 변경
-				const isYearMatch = date.getFullYear().toString() === selectedYear;
-				const isOwnerMatch = !selectedOwner || item.account_owner === selectedOwner;
-
-				if (isYearMatch && isOwnerMatch) {
-					const month = date.getMonth(); 
-					
-					const allocatedQty = Number(item.allocated_qty || 0);
-					const offeringPrice = Number(item.offering_price || 0);
-					const sellingPrice = Number(item.selling_price || 0);
-					const taxAndSellFee = Number(item.tax_and_sell_fee || 0);
-					const subscriptionFee = Number(item.subscription_fee || 0);
-					const loanInterest = Number(item.loan_interest || 0);
-
-					if (sellingPrice > 0) {
-						const profit = ((sellingPrice - offeringPrice) * allocatedQty) - taxAndSellFee - subscriptionFee - loanInterest;
-						monthlyProfits[month] += profit;
-						totalYearProfit += profit;
-					}
-				}
-			});
-
-			// 상단 그리드 월별 이익 매핑 및 색상 제어 흐름
-			for (let i = 1; i <= 12; i++) {
-				const cell = document.getElementById(`m${i}-profit`);
-				if (cell) {
-					const val = monthlyProfits[i-1];
-					cell.innerText = val !== 0 ? val.toLocaleString() : '0';
-					cell.style.color = val > 0 ? 'var(--point-green)' : (val < 0 ? '#e74c3c' : 'var(--vv-text-main)');
-				}
-			}
-			
-			const totalCell = document.getElementById('total-year-profit');
-			totalCell.innerText = totalYearProfit.toLocaleString();
-			totalCell.style.color = totalYearProfit > 0 ? 'var(--point-green)' : (totalYearProfit < 0 ? '#e74c3c' : 'var(--vv-text-main)');
-
-			// Chart 컴포넌트 렌더링 동적 리프레시 명령 시그널 전송
-			if (window.myChart) {
-				window.myChart.data.datasets[0].data = monthlyProfits;
-				window.myChart.update();
-				window.myChart.resize();
-			}
-		}
+        // 7. 모달 제어(등록 및 수정 기능 통합)
 
         /**
-         * 페이징 인덱스 인터페이스 렌더링 콤포넌트 생성기
+         * 실시간 입력창 천 단위 콤마 포맷팅 헬퍼 함수
          */
-        function renderPagination(totalCount, currentPage) {
-            const container = document.getElementById('pagination');
-            container.innerHTML = '';
-            
-            const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-            if (totalPages <= 1) return;
-
-            const prevBtn = document.createElement('button');
-            prevBtn.className = 'page-btn';
-            prevBtn.innerText = '이전';
-            prevBtn.disabled = currentPage === 1;
-            prevBtn.onclick = () => fetchIpoHistory(currentPage - 1);
-            container.appendChild(prevBtn);
-
-            for (let i = 1; i <= totalPages; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-                pageBtn.innerText = i;
-                pageBtn.onclick = () => fetchIpoHistory(i);
-                container.appendChild(pageBtn);
+        function formatNumberInput(el) {
+            let value = el.value.replace(/[^0-9]/g, '');
+            if (!value || value === '0') {
+                el.value = '0';
+                return;
             }
-
-            const nextBtn = document.createElement('button');
-            nextBtn.className = 'page-btn';
-            nextBtn.innerText = '다음';
-            nextBtn.disabled = currentPage === totalPages;
-            nextBtn.onclick = () => fetchIpoHistory(currentPage + 1);
-            container.appendChild(nextBtn);
+            el.value = Number(value).toLocaleString();
         }
 
-        // =========================================================================
-        // 3. 모달 인풋 필드 상태값 핸들링 및 데이터 C.U.D 처리 파트
-        // =========================================================================
-        
         /**
-         * 신규 생성 폼 데이터 노드 입력창 오픈 함수 (콤마 반영 형식 변경)
+         * 포맷터 적용 값을 일반 숫자로 환원해주는 헬퍼 함수
          */
+        function getRawNumberValue(id) {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            return parseFloat(el.value.replace(/,/g, '')) || 0;
+        }
+
+        /**
+         * 일반 숫자를 포맷된 스트링으로 주입해주는 헬퍼 함수
+         */
+        function setFormattedNumberValue(id, num) {
+            const target = document.getElementById(id);
+            if (target) {
+                target.value = Number(num || 0).toLocaleString();
+            }
+        }
+
         function openRegisterModal() {
+            document.getElementById('modal-title').innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5 text-[#5850EC]"></i> 공모주 투자내역 등록';
             document.getElementById('form-id').value = '';
+            document.getElementById('form-account-owner').value = 'man';
             document.getElementById('form-stock-name').value = '';
             document.getElementById('form-broker').value = '';
-            
+
             document.getElementById('form-subscription-date').value = '';
             document.getElementById('form-refund-date').value = '';
             document.getElementById('form-listing-date').value = '';
             document.getElementById('form-sell-date').value = '';
-            
-            // 콤마 형식 도우미 적용 주입
+
             setFormattedNumberValue('form-offering-price', 0);
             setFormattedNumberValue('form-deposit-amount', 0);
             setFormattedNumberValue('form-subscription-qty', 0);
@@ -606,30 +687,26 @@
             setFormattedNumberValue('form-selling-price', 0);
             setFormattedNumberValue('form-tax-fee', 0);
             setFormattedNumberValue('form-loan-interest', 0);
-            
-            document.getElementById('modal-title').innerText = "공모주 투자내역 등록";
-            document.getElementById('btn-delete-ipo').style.display = 'none'; 
-            document.getElementById('register-modal').style.display = 'block';
+
+            document.getElementById('btn-delete-ipo').style.display = 'none';
+            document.getElementById('register-modal').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
         }
-        
-        /**
-         * 수정 액션을 위한 데이터 역바인딩 및 모달 필드 동적 활성화 함수 (콤마 반영 형식 변경)
-         * @param {string} itemJsonStr - 역직렬화 대상 로우 정보 텍스트 스트링
-         */
-        function openEditModal(itemJsonStr) {
-            const item = JSON.parse(decodeURIComponent(itemJsonStr));
-            
-            document.getElementById('form-id').value = item.id; 
-            document.getElementById('form-account-owner').value = item.account_owner;
-            document.getElementById('form-stock-name').value = item.stock_name;
-            document.getElementById('form-broker').value = item.broker;
-            
+
+        function openEditModal(encodedItem) {
+            const item = JSON.parse(decodeURIComponent(encodedItem));
+
+            document.getElementById('modal-title').innerHTML = '<i data-lucide="pencil" class="w-5 h-5 text-[#5850EC]"></i> 공모주 투자내역 수정';
+            document.getElementById('form-id').value = item.id || '';
+            document.getElementById('form-account-owner').value = item.account_owner || 'man';
+            document.getElementById('form-stock-name').value = item.stock_name || '';
+            document.getElementById('form-broker').value = item.broker || '';
+
             document.getElementById('form-subscription-date').value = item.subscription_date || '';
             document.getElementById('form-refund-date').value = item.refund_date || '';
             document.getElementById('form-listing-date').value = item.listing_date || '';
             document.getElementById('form-sell-date').value = item.sell_date || '';
-            
-            // 콤마 형식 도우미 적용 주입
+
             setFormattedNumberValue('form-offering-price', item.offering_price);
             setFormattedNumberValue('form-deposit-amount', item.deposit_amount);
             setFormattedNumberValue('form-subscription-qty', item.subscription_qty);
@@ -638,43 +715,36 @@
             setFormattedNumberValue('form-selling-price', item.selling_price);
             setFormattedNumberValue('form-tax-fee', item.tax_and_sell_fee);
             setFormattedNumberValue('form-loan-interest', item.loan_interest);
-            
-            document.getElementById('modal-title').innerText = "공모주 투자내역 수정";
-            document.getElementById('btn-delete-ipo').style.display = 'block'; 
-            document.getElementById('register-modal').style.display = 'block';
+
+            document.getElementById('btn-delete-ipo').style.display = 'block';
+            document.getElementById('register-modal').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
         }
 
-        /**
-         * 모달 창 닫기 기능 수행 함수
-         */
         function closeRegisterModal() {
-            document.getElementById('register-modal').style.display = 'none';
+            document.getElementById('register-modal').classList.add('hidden');
         }
 
-        /**
-         * 공모주 데이터 처리 통합 쿼리 가동 함수 (ID의 유무를 통한 조건 분기형 처리)
-         */
-        async function saveIpoInvestment() {
+        async function saveIpoData() {
             try {
-                const id = document.getElementById('form-id').value; 
+                const id = document.getElementById('form-id').value;
 
-                // 콤마가 제거된 실숫값을 정제 추출하는 헬퍼 가동
                 const record = {
                     account_owner: document.getElementById('form-account-owner').value,
                     stock_name: document.getElementById('form-stock-name').value,
                     broker: document.getElementById('form-broker').value,
                     offering_price: getRawNumberValue('form-offering-price'),
-                    
+
                     subscription_date: document.getElementById('form-subscription-date').value || null,
                     refund_date: document.getElementById('form-refund-date').value || null,
                     listing_date: document.getElementById('form-listing-date').value || null,
                     sell_date: document.getElementById('form-sell-date').value || null,
-                    
+
                     deposit_amount: getRawNumberValue('form-deposit-amount'),
                     subscription_qty: parseInt(getRawNumberValue('form-subscription-qty')) || 0,
                     allocated_qty: parseInt(getRawNumberValue('form-allocated-qty')) || 0,
                     subscription_fee: getRawNumberValue('form-sub-fee'),
-                    
+
                     selling_price: getRawNumberValue('form-selling-price'),
                     tax_and_sell_fee: getRawNumberValue('form-tax-fee'),
                     loan_interest: getRawNumberValue('form-loan-interest')
@@ -691,31 +761,29 @@
                         .from('tb_ipo_investment')
                         .update(record)
                         .eq('id', id);
-                        
+
                     if (result.error) throw result.error;
                     alert("공모주 투자 데이터가 성공적으로 수정되었습니다.");
                 } else {
                     result = await clientSupabase
                         .from('tb_ipo_investment')
                         .insert([record]);
-                        
+
                     if (result.error) throw result.error;
                     alert("공모주 투자 데이터가 정상적으로 등록되었습니다.");
                 }
 
                 closeRegisterModal();
-                fetchIpoHistory(1); 
-                
+                fetchIpoHistory(1);
+                loadAllDataForDashboard();
+
             } catch (err) {
                 console.error("데이터베이스 트랜잭션 예외 오류:", err);
                 alert("저장 중 오류가 발생했습니다: " + err.message);
             }
         }
-        
-        /**
-         * 타겟 레코드 완전 파기 삭제 트랜잭션 쿼리 수행 함수
-         */
-        async function deleteIpoInvestment() {
+
+        async function deleteIpoData() {
             const id = document.getElementById('form-id').value;
             if (!id) return;
 
@@ -733,21 +801,19 @@
 
                 alert("성공적으로 삭제되었습니다.");
                 closeRegisterModal();
-                fetchIpoHistory(1); 
+                fetchIpoHistory(1);
+                loadAllDataForDashboard();
             } catch (err) {
                 console.error("데이터 삭제 쿼리 예외 발생:", err);
                 alert("삭제 중 오류가 발생했습니다: " + err.message);
             }
         }
 
-        // =========================================================================
-        // 4. 애플리케이션 초기화 시동 스크립트 핸들러 엔진 파트
-        // =========================================================================
-        window.onload = function() {
-            switchView('status');
-            fetchIpoHistory(1);
-
-            const ctx = document.getElementById('monthlyChart').getContext('2d');
+        // 8. 차트 시스템 렌더링 스크립트 기반 생성
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('monthlyChart')?.getContext('2d');
+            if (!ctx) return;
+            
             window.myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -757,9 +823,9 @@
                         data: Array(12).fill(0),
                         backgroundColor: function(context) {
                             const val = context.raw;
-                            return val >= 0 ? '#3b82f6' : '#e74c3c'; 
+                            return val >= 0 ? '#f87171' : '#60a5fa'; 
                         },
-                        borderRadius: 4,
+                        borderRadius: 6,
                         borderWidth: 0
                     }]
                 },
@@ -781,7 +847,7 @@
                     }
                 }
             });
-        };
+        });
     </script>
 </body>
 </html>

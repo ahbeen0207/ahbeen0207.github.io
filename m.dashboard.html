@@ -7,16 +7,17 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --vv-bg-main: #121212;
-            --vv-bg-card: #2c2c2c;
-            --vv-border: #3d3d3d;
-            --vv-text-main: rgba(255, 255, 255, 0.95);
-            --vv-text-muted: rgba(255, 255, 255, 0.65);
-            --vv-text-mint: #03dac6;
-            --point-blue: #3b82f6;
-            --point-green: #2ecc71;
+            --vv-bg-main: #0E0E10;
+            --vv-bg-card: #18181C;
+            --vv-bg-input: #141416;
+            --vv-border: #232329;
+            --vv-text-main: #E4E4E7;
+            --vv-text-muted: #A1A1AA;
+            --vv-text-mint: #A1A1AA;
+            --point-blue: #5850EC;
+            --point-green: #34D399;
             
-            /* 자산별 테마 색상 */
+            /* 자산별 테마 색상 (PC dashboard.html과 동일) */
             --color-total: #ff0000;
             --color-stock: #ff00bf;
             --color-bond: #00b050;
@@ -68,7 +69,7 @@
         
         .header-menu a:last-child { border-right: none; }
         .header-menu a.active { background-color: var(--point-blue); color: white; }
-        .header-menu a.home-btn { color: var(--vv-text-mint); }
+        .header-menu a.home-btn { color: var(--point-blue); }
 
         /* 메인 콘텐츠 영역 (사이드바 제거로 단일 배치) */
         main { 
@@ -126,7 +127,8 @@
             font-size: 14px; 
             font-weight: bold; 
             color: #fff; 
-            background-color: rgba(255,255,255,0.15); 
+            background-color: rgba(255,255,255,0.1); 
+            border: 1px solid var(--vv-border);
             width: 100%; 
         }
         
@@ -203,41 +205,12 @@
     </main>
 
     <script>
-        let globalUsdToKrw = 1350;
-        window.cachedGasData = null;
-
         // Supabase 초기화 설정
         const SUPABASE_URL = 'https://pdinnikiwwtofkoxdxbb.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_5rPciNN5aQEMljwLY4Hn7g_CUcjCJ_l';
         const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let calculatedAssets = { total: 0, stock: 0, bond: 0, cash: 0, gold: 0 };
-
-        async function initExchangeRate() {
-            try {
-                const rateRes = await fetch('https://open.er-api.com/v6/latest/USD');
-                const rateJson = await rateRes.json();
-                if(rateJson?.rates?.KRW) {
-                    globalUsdToKrw = rateJson.rates.KRW;
-                }
-            } catch(e) {
-                console.warn("환율 정보 조회 실패 기본값 사용:", e);
-            }
-        }
-
-        async function preloadGoogleStockPrices() {
-            const gasUrl = "https://script.google.com/macros/s/AKfycbwe2VssvmIlGMUrX0APMo8XYIWRWP0yTpTZw8KPYhtIoaj-ol8dtafnByZoB9ljtf0/exec";
-            try {
-                const response = await fetch(`${gasUrl}?t=${new Date().getTime()}`, { method: 'GET', mode: 'cors' });
-                const data = await response.json();
-                if (data && data.status === "success") {
-                    window.cachedGasData = data.stockPrices;
-                    console.log("✅ 실시간 시세 캐시 동기화 완료");
-                }
-            } catch (error) {
-                console.error("❌ 실시간 시세 캐시 동기화 실패:", error);
-            }
-        }
 
         function normalizeAssetType(rawType) {
             if (!rawType) return '현금';
@@ -329,17 +302,8 @@
         }
 
         // 페이지 진입 즉시 실시간 데이터 갱신
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await Promise.all([
-                    initExchangeRate(),
-                    preloadGoogleStockPrices(),
-                    fetchDashboardData()
-                ]);
-            } catch (e) {
-                console.error("초기 로딩 인터셉트 오류:", e);
-                await fetchDashboardData();
-            }
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchDashboardData();
         });
     </script>
 </body>

@@ -4,275 +4,404 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주식관리 시스템 - 예적금</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --vv-bg-main: #121212;
-            --vv-bg-card: #2c2c2c;
-            --vv-border: #3d3d3d;
-            --vv-text-main: rgba(255, 255, 255, 0.95);
-            --vv-text-muted: rgba(255, 255, 255, 0.65);
-            --vv-text-mint: #03dac6;
-            --point-blue: #3b82f6;
-            --point-green: #2ecc71;
-            --point-purple: #a855f7;
-            --sidebar-width: 160px;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&family=Noto+Sans+KR:wght=300;400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: #0E0E10;
+        }
+        .sidebar-bg {
+            background-color: #141416;
+            border-left: 1px solid #232329;
+            border-right: 1px solid #232329;
+        }
+        /* 중앙 80% 인터페이스의 가장 우측 경계선 스타일 정의 */
+        .content-frame {
+            border-right: 1px solid #232329;
+        }
+        .card-bg {
+            background-color: #18181C;
+            border: 1px solid #232329;
+        }
+        .input-bg {
+            background-color: #111114;
+            border: 1px solid #232329;
+        }
+        
+        /* 브라우저 메인 및 메인프레임 우측 전체 스크롤바 숨기기 기능 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: var(--vv-bg-main); color: var(--vv-text-main); font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; height: 100vh; padding: 20px 10%; overflow: hidden; }
+        /* 데이터 테이블 내부 전용 가로 스크롤바 스타일 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #141416;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2D2D35;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #3E3E4A;
+        }
 
-        /* 상단 및 좌측 레이아웃 */
-        .top-section { display: flex; gap: 12px; height: 60px; margin-bottom: 12px; flex-shrink: 0; }
-        .logo-box { width: var(--sidebar-width); height: 60px; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background-color: var(--vv-bg-card); padding: 2px; overflow: hidden; }
-        .logo-box img { height: 54px; width: auto; object-fit: cover; border-radius: 6px; }
-        .header-menu { flex: 1; border: 1px solid var(--vv-border); border-radius: 8px; display: flex; background-color: var(--vv-bg-card); overflow: hidden; }
-        .header-menu a { flex: 1; display: flex; justify-content: center; align-items: center; text-decoration: none; color: var(--vv-text-main); font-weight: 600; border-right: 1px solid var(--vv-border); transition: 0.2s; }
-        .header-menu a.active { background-color: var(--point-blue); color: white; }
+        /* 페이지네이션 스타일 커스텀 */
+        .page-btn {
+            background-color: #141416;
+            border: 1px solid #232329;
+            color: #A1A1AA;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            min-width: 32px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .page-btn:hover:not(:disabled) {
+            background-color: #232329;
+            color: #ffffff;
+            border-color: #5850EC;
+        }
+        .page-btn.active {
+            background-color: #5850EC;
+            color: white;
+            border-color: #5850EC;
+            font-weight: bold;
+        }
+        .page-btn:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+            background-color: #0E0E10;
+        }
 
-        .wrapper { display: flex; flex: 1; gap: 12px; overflow: hidden; }
-        nav { 
-			width: var(--sidebar-width); 
-			border: 1px solid var(--vv-border); 
-			border-radius: 12px; 
-			padding: 15px 10px 20px 10px; 
-			display: flex; 
-			flex-direction: column; 
-			background-color: var(--vv-bg-card); 
-		}
-		nav .nav-btn + .nav-btn { margin-top: 20px; }
-        .nav-btn { width: 100%; padding: 12px 0; background: var(--vv-bg-main); border: 1px solid var(--vv-border); color: var(--vv-text-main); border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .nav-btn.active { background-color: var(--point-green); border-color: var(--point-green); color: white; }
-		
-		.sidebar-logo-box {
-			width: 70%;                  
-			height: 70px;                
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			margin: 0 auto 25px auto;    
-			overflow: hidden;
-			border-radius: 8px;
-			border: 1px solid var(--vv-border);
-			background-color: var(--vv-bg-main);
-		}
-		.sidebar-logo-box img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* 메인 페이지 영역 */
-        main { flex: 1; border: 1px solid var(--vv-border); border-radius: 12px; background-color: var(--vv-bg-card); padding: 24px; display: flex; flex-direction: column; overflow: hidden; }
-        .filter-container { display: flex; flex-wrap: wrap; align-items: center; gap: 15px; background: var(--vv-bg-main); padding: 15px 20px; border-radius: 8px; border: 1px solid var(--vv-border); margin-bottom: 20px; }
-        .filter-item { display: flex; align-items: center; gap: 8px; }
-        .filter-item label { color: var(--vv-text-mint); font-size: 13px; white-space: nowrap; }
-        .filter-item input, .filter-item select { background: var(--vv-bg-card); border: 1px solid var(--vv-border); color: white; padding: 6px 10px; border-radius: 4px; font-size: 13px;}
-        
-        .filter-date-class { width: 150px; }
-        .filter-name-class { width: 120px; }
-
-        .button-group { margin-left: auto; display: flex; gap: 8px; }
-        .btn { padding: 8px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 13px; }
-        .btn-blue { background-color: var(--point-blue); }
-        .btn-indigo { background-color: var(--point-purple); }
-
-        .table-area { flex: 1; overflow: auto; border: 1px solid var(--vv-border); border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th { position: sticky; top: 0; background: #333; color: var(--vv-text-mint); font-size: 12px; padding: 12px 8px; border-bottom: 2px solid var(--vv-border); text-align: center; }
-        td { padding: 10px 8px; border-bottom: 1px solid var(--vv-border); font-size: 13px; text-align: center; color: var(--vv-text-main); }
-        tr:hover { background-color: rgba(255,255,255,0.03); }
-
-        /* 등록 모달 */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; }
-        .modal-content { position: absolute; background: var(--vv-bg-card); width: 950px; border-radius: 12px; border: 1px solid var(--vv-border); left: 50%; transform: translateX(-50%); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-header { padding: 12px 16px; background: #333; border-bottom: 1px solid var(--vv-border); display: flex; justify-content: space-between; align-items: center; cursor: move; border-radius: 12px 12px 0 0; }
-        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; }
-        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 12px; color: var(--vv-text-muted); }
-        .form-group input, .form-group select { background: var(--vv-bg-main); border: 1px solid var(--vv-border); color: white; padding: 8px; border-radius: 4px; font-size: 13px; }
-        .modal-footer { padding: 16px; border-top: 1px solid var(--vv-border); display: flex; justify-content: flex-end; gap: 8px; }
-
-        .pagination-container { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 20px; padding: 10px 0; user-select: none; flex-shrink: 0; }
-        .page-btn { background-color: #333; border: 1px solid var(--vv-border); color: #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; min-width: 32px; text-align: center; transition: 0.2s; }
-        .page-btn:hover:not(:disabled) { background-color: #444; color: white; border-color: var(--vv-text-mint); }
-        .page-btn.active { background-color: var(--point-blue); color: white; border-color: var(--point-blue); font-weight: bold; }
-        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; background-color: #222; }
-
+        /* 크롬 달력 인풋 반전 */
         input[type="date"]::-webkit-calendar-picker-indicator,
-        input[type="month"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        input[type="month"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
     </style>
 </head>
-<body>
+<body class="text-[#E4E4E7] text-sm antialiased flex h-screen overflow-hidden bg-[#0E0E10]">
 
-    <div class="top-section">
-        <div class="logo-box">
-			<a href="select_page.html" style="color: var(--vv-text-mint); font-weight: bold; text-decoration: none; font-size: 16px; letter-spacing: 1px;">HOME</a>
-		</div>
-        <div class="header-menu">
-            <a href="dashboard.html">자산현황</a>
-            <a href="stock.html">주식투자</a>
-            <a href="stock_ipo.html">공모주투자</a>
-            <a href="#" class="active">예적금</a>
-            <a href="#" class="nav-item" onclick="location.reload(true); return false;">새로고침</a>
-        </div>
+    <!-- 좌측 10% 공백 유지 -->
+    <div class="w-[10%] h-full bg-[#0E0E10] shrink-0"></div>
+
+    <!-- 중앙 80% 영역 -->
+    <div class="w-[80%] h-full flex shrink-0 content-frame">
+        
+        <!-- 좌측 사이드바: 너비 w-52, 내부 패딩 p-3 -->
+        <aside class="w-52 sidebar-bg flex flex-col justify-between p-3 shrink-0 h-full">
+            <div>
+                <!-- 상단 로고: 마진 mb-5, black_rabbit 로고 100% 확대 -->
+                <a href="select_page.html" class="flex items-center justify-center gap-2.5 mb-5 px-1 hover:opacity-85 transition">
+                    <div class="bg-[#5850EC] p-1.5 rounded-xl text-white shadow-lg shadow-[#5850EC]/25 shrink-0 flex items-center justify-center">
+                        <img src="black_rabbit.jpg" class="w-10 h-10 rounded-lg object-cover" onerror="this.src='rabbit.jpg'">
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-white">HOME</span>
+                </a>
+                
+                <!-- 네비게이션: 주식관리 스위칭 탭 구성 (mt-20 적용) -->
+                <nav class="space-y-0.5 mt-20">
+                    <button id="btn-status" class="w-full flex items-center gap-2 bg-[#232329] text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none" onclick="switchView('status')">
+                        <i data-lucide="layout-grid" class="w-5 h-5 text-[#5850EC]"></i> 종목별현황
+                    </button>
+                    <button id="btn-trade" class="w-full flex items-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none" onclick="switchView('trade')">
+                        <i data-lucide="history" class="w-5 h-5"></i> 거래내역
+                    </button>
+                </nav>
+            </div>
+
+            <!-- 하단 정보: Supabase 로그인 사용자 연동 (U아이콘 + 계정명) -->
+            <div class="border-t border-[#232329] pt-2 flex items-center gap-2 px-1">
+                <div class="w-8 h-8 rounded-full bg-[#5850EC]/20 border border-[#5850EC]/40 flex items-center justify-center text-[#A5A6F6] text-sm font-bold shrink-0">
+                    U
+                </div>
+                <div class="min-w-0">
+                    <p id="user-email" class="text-sm font-semibold text-white truncate">Loading...</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 우측 메인 영역 -->
+        <main class="flex-1 flex flex-col overflow-y-auto bg-[#0E0E10] h-full no-scrollbar">
+            
+            <!-- 상단 헤더: 6개 균등 분할 네비게이션 (세로 크기 h-20, 폰트 text-lg) -->
+            <header class="h-20 border-b border-[#232329] px-2 flex items-center bg-[#0E0E10]/50 backdrop-blur-md sticky top-0 z-10 shrink-0">
+                <div class="grid grid-cols-6 gap-1.5 w-full">
+                    <a href="dashboard.html" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> 자산 현황
+                    </a>
+                    <a href="stock.html" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i> 주식투자
+                    </a>
+                    <a href="stock_ipo.html" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="file-text" class="w-5 h-5"></i> 공모주투자
+                    </a>
+                    <a href="#" class="flex items-center justify-center gap-2 bg-[#232329] text-white px-2 py-2.5 rounded-lg text-lg font-medium transition">
+                        <i data-lucide="landmark" class="w-5 h-5 text-[#5850EC]"></i> 예적금
+                    </a>
+                    <a href="#" class="flex items-center justify-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-2 py-2.5 rounded-lg text-lg font-medium transition" onclick="location.reload(true); return false;">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i> 새로고침
+                    </a>
+                    <div class="flex items-center justify-center gap-2 text-slate-400 px-2 py-2.5 rounded-lg text-lg font-medium">
+                        <i data-lucide="clock" class="w-5 h-5"></i> <span id="last-updated-text">-</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 메인 콘텐츠 영역: 패딩 p-4, 내부 간격 space-y-3 제거 -->
+            <div class="p-4 w-full flex-1 flex flex-col">
+                
+                <!-- 1. 종목별 현황 뷰 -->
+                <div id="main-status" class="space-y-3 w-full flex-1 flex flex-col">
+                    
+                    <!-- 필터 카드 -->
+                    <div class="card-bg py-5 px-3 rounded-lg shadow-xl flex flex-wrap items-center gap-3 text-sm shrink-0">
+                        <div class="flex items-center gap-1">
+                            <input type="month" id="filter-status-date" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC] w-36">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">기관분류</label>
+                            <select id="filter-status-inst-category" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC]">
+                                <option value="">전체</option>
+                                <option value="은행">은행</option>
+                                <option value="증권">증권</option>
+                                <option value="저축은행">저축은행</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">계좌분류</label>
+                            <select id="filter-status-account" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC]">
+                                <option value="">전체</option>
+                                <option value="수시입출금">수시입출금</option>
+                                <option value="은행예금">은행예금</option>
+                                <option value="ISA">ISA</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[120px] flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">종목명</label>
+                            <input type="text" id="filter-status-name" placeholder="종목명 입력..." class="w-full text-xs input-bg rounded-md px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#5850EC]">
+                        </div>
+                        
+                        <button class="bg-[#5850EC] hover:bg-[#4B43D3] text-white text-xs font-semibold px-4 py-3 rounded-md transition flex items-center justify-center gap-1 focus:outline-none" onclick="fetchStatusHistory(1)">
+                            <i data-lucide="search" class="w-3.5 h-3.5"></i> 검색
+                        </button>
+                    </div>
+
+                    <!-- 데이터 리스트 카드 -->
+                    <div class="card-bg p-4 rounded-xl shadow-xl flex flex-col overflow-hidden flex-1">
+                        <div class="overflow-x-auto custom-scrollbar text-sm flex-1">
+                            <table class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead class="bg-[#141416] text-slate-400 uppercase font-medium border-b border-[#232329]">
+                                    <tr>
+                                        <th class="p-2.5">입금일</th>
+                                        <th class="p-2.5">만기일</th>
+                                        <th class="p-2.5">금융기관분류</th>
+                                        <th class="p-2.5">금융기관명</th>
+                                        <th class="p-2.5">계좌분류</th>
+                                        <th class="p-2.5">자산분류</th>
+                                        <th class="p-2.5 text-left">종목명</th>
+                                        <th class="p-2.5">상태</th>
+                                        <th class="p-2.5 text-right">금액</th>
+                                        <th class="p-2.5 text-right">이자</th>
+                                        <th class="p-2.5 text-right">수수료/세금</th>
+                                        <th class="p-2.5 text-right pr-10">총금액</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-status-body" class="divide-y divide-[#232329] text-slate-300">
+                                    <tr><td colspan="12" class="p-4 text-center">예적금 데이터를 불러오는 중입니다.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="pagination-status" class="pagination-container flex justify-center gap-1 mt-4"></div>
+                    </div>
+                </div>
+
+                <!-- 2. 거래내역 뷰 -->
+                <div id="main-trade" class="space-y-3 w-full flex-1 flex flex-col" style="display: none;">
+                    
+                    <!-- 필터 카드 -->
+                    <div id="filter-box" class="card-bg py-5 px-3 rounded-lg shadow-xl flex flex-wrap items-center gap-3 text-sm shrink-0">
+                        <div class="flex items-center gap-1">
+                            <input type="month" id="filter-date" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC] w-36">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">기관분류</label>
+                            <select id="filter-inst-category" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC]">
+                                <option value="">전체</option>
+                                <option value="은행">은행</option>
+                                <option value="증권">증권</option>
+                                <option value="저축은행">저축은행</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">계좌분류</label>
+                            <select id="filter-account" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC]">
+                                <option value="">전체</option>
+                                <option value="수시입출금">수시입출금</option>
+                                <option value="은행예금">은행예금</option>
+                                <option value="ISA">ISA</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">상태</label>
+                            <select id="filter-status" class="bg-[#141416] text-xs text-slate-300 rounded-md px-2.5 py-2.5 border border-[#232329] focus:outline-none focus:border-[#5850EC]">
+                                <option value="">전체</option>
+                                <option value="유지">유지</option>
+                                <option value="해지">해지</option>
+                                <option value="만기">만기</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[120px] flex items-center gap-1">
+                            <label class="text-xs text-slate-400 whitespace-nowrap">종목명</label>
+                            <input type="text" id="filter-name" placeholder="종목명 입력..." class="w-full text-xs input-bg rounded-md px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#5850EC]">
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <button class="bg-[#5850EC] hover:bg-[#4B43D3] text-white text-xs font-semibold px-4 py-3 rounded-md transition flex items-center justify-center gap-1 focus:outline-none" onclick="fetchTradeHistory(1)">
+                                <i data-lucide="search" class="w-3.5 h-3.5"></i> 검색
+                            </button>
+                            <button class="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold px-4 py-3 rounded-md transition flex items-center justify-center gap-1 focus:outline-none" onclick="openRegisterModal()">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> 등록
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 데이터 리스트 카드 -->
+                    <div class="card-bg p-4 rounded-xl shadow-xl flex flex-col overflow-hidden flex-1">
+                        <div class="overflow-x-auto custom-scrollbar text-sm flex-1">
+                            <table id="data-table" class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead class="bg-[#141416] text-slate-400 uppercase font-medium border-b border-[#232329]">
+                                    <tr>
+                                        <th class="p-2.5">입금일</th>
+                                        <th class="p-2.5">만기일</th>
+                                        <th class="p-2.5">금융기관분류</th>
+                                        <th class="p-2.5">금융기관명</th>
+                                        <th class="p-2.5">계좌분류</th>
+                                        <th class="p-2.5">자산분류</th>
+                                        <th class="p-2.5 text-left">종목명</th>
+                                        <th class="p-2.5">상태</th>
+                                        <th class="p-2.5 text-right">금액</th>
+                                        <th class="p-2.5 text-right">이자</th>
+                                        <th class="p-2.5 text-right">수수료/세금</th>
+                                        <th class="p-2.5 text-right pr-10">총금액</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-[#232329] text-slate-300">
+                                    <tr><td colspan="12" class="p-4 text-center">예적금 데이터를 불러오는 중입니다.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="pagination" class="pagination-container flex justify-center gap-1 mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <div class="wrapper">
-        <nav>
-			<div class="sidebar-logo-box"><img src="rabbit.jpg" alt="로고" onerror="this.src=''"></div>
-            <button id="btn-status" class="nav-btn" onclick="switchView('status')">종목별현황</button>
-            <button id="btn-trade" class="nav-btn active" onclick="switchView('trade')">거래내역</button>
-        </nav>
-
-        <main id="main-status" style="display: none;">
-            <div class="filter-container">
-                <div class="filter-item">
-                    <input type="text" id="filter-status-date" class="filter-date-class" placeholder="입금월 선택" onfocus="(this.type='month')" onblur="if(!this.value)this.type='text'">
-                </div>
-                <div class="filter-item"><label>기관분류</label>
-                    <select id="filter-status-inst-category"><option value="">전체</option><option value="은행">은행</option><option value="증권">증권</option><option value="저축은행">저축은행</option></select>
-                </div>
-                <div class="filter-item"><label>계좌분류</label>
-                    <select id="filter-status-account"><option value="">전체</option><option value="수시입출금">수시입출금</option><option value="은행예금">은행예금</option><option value="ISA">ISA</option></select>
-                </div>
-                <div class="filter-item"><label>종목명</label><input type="text" id="filter-status-name" class="filter-name-class"></div>
-                
-                <div class="button-group">
-                    <button class="btn btn-blue" onclick="fetchStatusHistory(1)">검색</button>
-                </div>
-            </div>
-
-            <div class="table-area">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>입금일</th><th>만기일</th><th>금융기관분류</th><th>금융기관명</th><th>계좌분류</th><th>자산분류</th><th>종목명</th><th>상태</th><th>금액</th><th>이자</th><th>수수료/세금</th><th>총금액</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-status-body"></tbody>
-                </table>
-            </div>
-            <div id="pagination-status" class="pagination-container"></div>
-        </main>
-
-        <main id="main-trade">
-            <div id="filter-box" class="filter-container">
-                <div class="filter-item">
-                    <input type="text" id="filter-date" class="filter-date-class" placeholder="입금월 선택" onfocus="(this.type='month')" onblur="if(!this.value)this.type='text'">
-                </div>
-                <div class="filter-item"><label>기관분류</label>
-                    <select id="filter-inst-category"><option value="">전체</option><option value="은행">은행</option><option value="증권">증권</option><option value="저축은행">저축은행</option></select>
-                </div>
-                <div class="filter-item"><label>계좌분류</label>
-                    <select id="filter-account"><option value="">전체</option><option value="수시입출금">수시입출금</option><option value="은행예금">은행예금</option><option value="ISA">ISA</option></select>
-                </div>
-                <div class="filter-item"><label>상태</label>
-                    <select id="filter-status"><option value="">전체</option><option value="유지">유지</option><option value="해지">해지</option><option value="만기">만기</option></select>
-                </div>
-                <div class="filter-item"><label>종목명</label><input type="text" id="filter-name" class="filter-name-class"></div>
-                
-                <div class="button-group">
-                    <button class="btn btn-blue" onclick="fetchTradeHistory(1)">검색</button>
-                    <button class="btn btn-indigo" onclick="openRegisterModal()">등록</button>
-                </div>
-            </div>
-
-            <div class="table-area">
-                <table id="data-table">
-                    <thead>
-                        <tr>
-                            <th>입금일</th><th>만기일</th><th>금융기관분류</th><th>금융기관명</th><th>계좌분류</th><th>자산분류</th><th>종목명</th><th>상태</th><th>금액</th><th>이자</th><th>수수료/세금</th><th>총금액</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body"></tbody>
-                </table>
-            </div>
-            <div id="pagination" class="pagination-container"></div>
-        </main>
-    </div>
-
-    <div id="register-modal" class="modal-overlay">
-        <div id="draggable-modal" class="modal-content">
-            <div class="modal-header" id="modal-header-drag">
-                <h2 style="color:var(--vv-text-mint); font-size:1rem;">예적금 내역 등록</h2>
-                <button style="background:none; border:none; color:white; cursor:pointer; font-size:20px;" onclick="closeModal()">&times;</button>
+    <!-- 등록/수정 모달 -->
+    <div id="register-modal" class="hidden fixed inset-0 bg-black/60 z-50 overflow-y-auto flex items-center justify-center p-4">
+        <div id="draggable-modal" class="card-bg rounded-xl shadow-2xl w-full max-w-4xl border border-[#232329] flex flex-col overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="px-4 py-3 bg-[#141416] border-b border-[#232329] flex items-center justify-between cursor-move" id="modal-header-drag">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-[#5850EC]"></i> 예적금 내역 등록
+                </h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition focus:outline-none">&times;</button>
             </div>
             
             <form id="register-form" onsubmit="saveTradeHistory(event)">
-				<input type="hidden" id="modal_trade_id" name="id"> 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>입금일</label>
-                        <input type="date" id="deposit_date" name="deposit_date" required>
+                <input type="hidden" id="modal_trade_id" name="id"> 
+                <div class="p-5 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">입금일</label>
+                        <input type="date" id="deposit_date" name="deposit_date" required class="input-bg rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                     </div>
-                    <div class="form-group">
-                        <label>만기일 (선택)</label>
-                        <input type="date" id="maturity_date" name="maturity_date">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">만기일 (선택)</label>
+                        <input type="date" id="maturity_date" name="maturity_date" class="input-bg rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                     </div>
-                    <div class="form-group">
-                        <label>기관분류</label>
-                        <select name="inst_category" required>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">기관분류</label>
+                        <select name="inst_category" required class="bg-[#111114] border border-[#232329] rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                             <option value="은행">은행</option>                            
                             <option value="증권">증권</option>
                             <option value="저축은행">저축은행</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>금융기관명</label>
-                        <input type="text" name="inst_name" placeholder="예: 웰컴저축, 신협 등" required>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">금융기관명</label>
+                        <input type="text" name="inst_name" placeholder="예: 웰컴저축, 신협 등" required class="input-bg rounded-md px-3 py-2 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-[#5850EC]">
                     </div>
-                    <div class="form-group">
-                        <label>계좌분류</label>
-                        <select name="account_category" required>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">계좌분류</label>
+                        <select name="account_category" required class="bg-[#111114] border border-[#232329] rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                             <option value="수시입출금">수시입출금</option>
                             <option value="은행예금">은행예금</option>
                             <option value="ISA">ISA</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>자산분류</label>
-                        <select name="asset_category" required>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">자산분류</label>
+                        <select name="asset_category" required class="bg-[#111114] border border-[#232329] rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                             <option value="현금">현금</option>
                             <option value="예금">예금</option>
                             <option value="채권">채권</option>
                         </select>
                     </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                        <label>종목명</label>
-                        <input type="text" name="product_name" placeholder="상품명 또는 종목명" required>
+                    <div class="flex flex-col gap-1 md:col-span-2">
+                        <label class="text-slate-400 font-semibold">종목명</label>
+                        <input type="text" name="product_name" placeholder="상품명 또는 종목명" required class="input-bg rounded-md px-3 py-2 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-[#5850EC]">
                     </div>
                     
-                    <div class="form-group">
-                        <label>상태</label>
-                        <select name="status" required>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">상태</label>
+                        <select name="status" required class="bg-[#111114] border border-[#232329] rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                             <option value="유지">유지</option>
                             <option value="해지">해지</option>
                             <option value="만기">만기</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>금액</label>
-                        <input type="number" step="0.01" id="modal_amount" name="amount" oninput="calculateAmounts()" placeholder="0" required>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">금액</label>
+                        <input type="number" step="0.01" id="modal_amount" name="amount" oninput="calculateAmounts()" placeholder="0" required class="input-bg rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                     </div>
-                    <div class="form-group">
-                        <label>이자</label>
-                        <input type="number" step="0.01" id="modal_interest" name="interest" oninput="calculateAmounts()" value="0">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">이자</label>
+                        <input type="number" step="0.01" id="modal_interest" name="interest" oninput="calculateAmounts()" value="0" class="input-bg rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                     </div>
-                    <div class="form-group">
-                        <label>수수료/세금</label>
-                        <input type="number" step="0.01" id="modal_tax" name="tax_expense" oninput="calculateAmounts()" value="0">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-slate-400 font-semibold">수수료/세금</label>
+                        <input type="number" step="0.01" id="modal_tax" name="tax_expense" oninput="calculateAmounts()" value="0" class="input-bg rounded-md px-3 py-2 text-slate-200 focus:outline-none focus:border-[#5850EC]">
                     </div>
-                    <div class="form-group">
-                        <label>총금액</label>
-                        <input type="number" step="0.01" id="modal_total" name="total_amount" readonly style="background-color: #333; color: var(--point-green); font-weight: bold;" value="0">
+                    <div class="flex flex-col gap-1 md:col-span-4">
+                        <label class="text-slate-400 font-semibold">총금액</label>
+                        <input type="number" step="0.01" id="modal_total" name="total_amount" readonly value="0" class="input-bg rounded-md px-3 py-2 text-emerald-400 font-bold focus:outline-none cursor-default">
+                    </div>
+                    <div class="flex flex-col gap-1 md:col-span-4">
+                        <label class="text-slate-400 font-semibold">비고</label>
+                        <textarea name="description" rows="2" placeholder="참고사항 입력" class="input-bg rounded-md px-3 py-2 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-[#5850EC] font-sans"></textarea>
                     </div>
                 </div>
-                <div class="form-group full-width" style="margin-top: 15px; padding: 0 20px;">
-                    <label>비고</label>
-                    <textarea name="description" rows="2" placeholder="참고사항 입력" style="width:100%; background:#1e1e1e; border:1px solid #3d3d3d; color:white; padding:8px; border-radius:4px; font-family:inherit;"></textarea>
+                <div class="px-4 py-3 bg-[#141416] border-t border-[#232329] flex justify-end gap-2 text-xs">
+                    <button type="button" class="bg-[#232329] hover:bg-[#2D2D35] text-slate-300 font-semibold px-4 py-2 rounded-md transition focus:outline-none" onclick="closeModal()">취소</button>
+                    <button type="submit" id="btn-submit-modal" class="bg-[#5850EC] hover:bg-[#4B43D3] text-white font-semibold px-4 py-2 rounded-md transition focus:outline-none">저장</button>
                 </div>
-				<div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-					<button type="button" class="btn" onclick="closeModal()" style="background:#444;">취소</button>
-					<button type="submit" id="btn-submit-modal" class="btn btn-blue">저장</button>
-				</div>
             </form>
         </div>
     </div>
@@ -309,7 +438,7 @@
             if(!_supabase) return;
             currentStatusPage = page;
             const body = document.getElementById('table-status-body');
-            body.innerHTML = '<tr><td colspan="12">조회 중...</td></tr>';
+            body.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-slate-400">조회 중...</td></tr>';
 
             const fMonth = document.getElementById('filter-status-date').value;
             const fInstCat = document.getElementById('filter-status-inst-category').value;
@@ -339,49 +468,51 @@
                 .range(from, to);
 
             if (error) {
-                body.innerHTML = `<tr><td colspan="12" style="color:#ff4b4b">에러: ${error.message}</td></tr>`;
+                body.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-500">데이터를 불러오는 중 오류가 발생했습니다: ${error.message}</td></tr>`;
                 renderStatusPagination(0);
                 return;
             }
 
             if (!data || data.length === 0) {
-                body.innerHTML = '<tr><td colspan="12">유지 중인 종목 현황이 없습니다.</td></tr>';
+                body.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-slate-500">유지 중인 종목 현황이 없습니다.</td></tr>';
                 renderStatusPagination(0);
+                updateLastUpdatedTime();
                 return;
             }
 
-			body.innerHTML = data.map(item => {
-				const itemStr = encodeURIComponent(JSON.stringify(item));
-				return `
-					<tr>
-						<td>${item.deposit_date}</td>
-						<td>${item.maturity_date || '-'}</td>
-						<td>${item.inst_category}</td>
-						<td>${item.inst_name}</td>
-						<td>${item.account_category}</td>
-						<td>${item.asset_category}</td>
-						<td style="text-align: left; padding-left: 15px;">
-							<span style="cursor: pointer; text-decoration: underline;" data-item="${itemStr}" onclick="openEditModal(this)">
-								${item.product_name}
-							</span>
-						</td>
-						<td style="color:inherit">${item.status}</td>
-						<td style="text-align: right;">${Number(item.amount).toLocaleString()}</td>
-						<td style="text-align: right;">${Number(item.interest).toLocaleString()}</td>
-						<td style="text-align: right;">${Number(item.tax_expense).toLocaleString()}</td>
-						<td style="text-align: right; color: var(--point-green); font-weight: bold;">${Number(item.total_amount).toLocaleString()}</td>
-					</tr>
-				`;
-			}).join('');
+            body.innerHTML = data.map(item => {
+                const itemStr = encodeURIComponent(JSON.stringify(item));
+                return `
+                    <tr class="hover:bg-[#1C1C20] transition border-b border-[#232329]">
+                        <td class="p-2.5 text-center text-slate-400">${item.deposit_date}</td>
+                        <td class="p-2.5 text-center text-slate-400">${item.maturity_date || '-'}</td>
+                        <td class="p-2.5 text-center text-slate-300">${item.inst_category}</td>
+                        <td class="p-2.5 text-slate-300">${item.inst_name}</td>
+                        <td class="p-2.5 text-center text-slate-300">${item.account_category}</td>
+                        <td class="p-2.5 text-center text-slate-300">${item.asset_category}</td>
+                        <td class="p-2.5 text-left font-medium text-white max-w-[200px] truncate underline decoration-[#5850EC] cursor-pointer hover:text-indigo-400" data-item="${itemStr}" onclick="openEditModal(this)">
+                            ${item.product_name}
+                        </td>
+                        <td class="p-2.5 text-center text-slate-300">${item.status}</td>
+                        <td class="p-2.5 text-right text-slate-300">${Number(item.amount).toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-300">${Number(item.interest).toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-400">${Number(item.tax_expense).toLocaleString()}</td>
+                        <td class="p-2.5 text-right pr-10 font-bold text-[#10B981]">${Number(item.total_amount).toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
 
             renderStatusPagination(count);
+
+            // 마지막 데이터 업데이트 시간 갱신
+            updateLastUpdatedTime();
         }
 
         async function fetchTradeHistory(page = 1) {
             if(!_supabase) return;
             currentPage = page;
             const body = document.getElementById('table-body');
-            body.innerHTML = '<tr><td colspan="12">조회 중...</td></tr>';
+            body.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-slate-400">조회 중...</td></tr>';
 
             const fMonth = document.getElementById('filter-date').value;
             const fInstCat = document.getElementById('filter-inst-category').value;
@@ -412,42 +543,45 @@
                 .range(from, to);
 
             if (error) {
-                body.innerHTML = `<tr><td colspan="12" style="color:#ff4b4b">에러: ${error.message}</td></tr>`;
+                body.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-500">데이터를 불러오는 중 오류가 발생했습니다: ${error.message}</td></tr>`;
                 renderPagination(0);
                 return;
             }
 
             if (!data || data.length === 0) {
-                body.innerHTML = '<tr><td colspan="12">내역이 없습니다.</td></tr>';
+                body.innerHTML = '<tr><td colspan="12" class="p-4 text-center text-slate-500">내역이 없습니다.</td></tr>';
                 renderPagination(0);
+                updateLastUpdatedTime();
                 return;
             }
 
-			body.innerHTML = data.map(item => {
-				const itemStr = encodeURIComponent(JSON.stringify(item));
-				return `
-					<tr>
-						<td>${item.deposit_date}</td>
-						<td>${item.maturity_date || '-'}</td>
-						<td>${item.inst_category}</td>
-						<td>${item.inst_name}</td>
-						<td>${item.account_category}</td>
-						<td>${item.asset_category}</td>
-						<td style="text-align: left; padding-left: 15px;">
-							<span style="cursor: pointer; text-decoration: underline;" data-item="${itemStr}" onclick="openEditModal(this)">
-								${item.product_name}
-							</span>
-						</td>
-						<td style="color:${item.status === '해지' ? '#888' : 'inherit'}">${item.status}</td>
-						<td style="text-align: right;">${Number(item.amount).toLocaleString()}</td>
-						<td style="text-align: right;">${Number(item.interest).toLocaleString()}</td>
-						<td style="text-align: right;">${Number(item.tax_expense).toLocaleString()}</td>
-						<td style="text-align: right; color: var(--point-green); font-weight: bold;">${Number(item.total_amount).toLocaleString()}</td>
-					</tr>
-				`;
-			}).join('');
+            body.innerHTML = data.map(item => {
+                const itemStr = encodeURIComponent(JSON.stringify(item));
+                const statusClass = item.status === '해지' ? 'text-slate-500' : 'text-slate-300';
+                return `
+                    <tr class="hover:bg-[#1C1C20] transition border-b border-[#232329]">
+                        <td class="p-2.5 text-center text-slate-400">${item.deposit_date}</td>
+                        <td class="p-2.5 text-center text-slate-400">${item.maturity_date || '-'}</td>
+                        <td class="p-2.5 text-center text-slate-300">${item.inst_category}</td>
+                        <td class="p-2.5 text-slate-300">${item.inst_name}</td>
+                        <td class="p-2.5 text-center text-slate-300">${item.account_category}</td>
+                        <td class="p-2.5 text-center text-slate-300">${item.asset_category}</td>
+                        <td class="p-2.5 text-left font-medium text-white max-w-[200px] truncate underline decoration-[#5850EC] cursor-pointer hover:text-indigo-400" data-item="${itemStr}" onclick="openEditModal(this)">
+                            ${item.product_name}
+                        </td>
+                        <td class="p-2.5 text-center ${statusClass}">${item.status}</td>
+                        <td class="p-2.5 text-right text-slate-300">${Number(item.amount).toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-300">${Number(item.interest).toLocaleString()}</td>
+                        <td class="p-2.5 text-right text-slate-400">${Number(item.tax_expense).toLocaleString()}</td>
+                        <td class="p-2.5 text-right pr-10 font-bold text-[#10B981]">${Number(item.total_amount).toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
 
             renderPagination(count);
+
+            // 마지막 데이터 업데이트 시간 갱신
+            updateLastUpdatedTime();
         }
 
         function renderStatusPagination(totalCount) {
@@ -506,38 +640,69 @@
             pagination.innerHTML = html;
         }
 
+        async function loadUserInfo() {
+            if (!_supabase) return;
+            try {
+                const { data: { session } } = await _supabase.auth.getSession();
+                const userEmailEl = document.getElementById('user-email');
+                if (userEmailEl) {
+                    if (session && session.user) {
+                        const email = session.user.email || "";
+                        userEmailEl.innerText = email.split('@')[0];
+                    } else {
+                        userEmailEl.innerText = 'Guest';
+                    }
+                }
+            } catch (e) {
+                console.error("사용자 정보 가져오기 실패:", e);
+                const userEmailEl = document.getElementById('user-email');
+                if (userEmailEl) userEmailEl.innerText = 'Error';
+            }
+        }
+
         function switchView(view) {
-            document.getElementById('btn-status').classList.toggle('active', view === 'status');
-            document.getElementById('btn-trade').classList.toggle('active', view === 'trade');
-            
+            const btnStatus = document.getElementById('btn-status');
+            const btnTrade = document.getElementById('btn-trade');
+            const mainStatus = document.getElementById('main-status');
+            const mainTrade = document.getElementById('main-trade');
+
             if (view === 'trade') {
-                document.getElementById('main-status').style.display = 'none';
-                document.getElementById('main-trade').style.display = 'flex';
+                btnStatus.className = "w-full flex items-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
+                btnTrade.className = "w-full flex items-center gap-2 bg-[#232329] text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
+                
+                // 아이콘 색상 교체
+                const iconStatus = btnStatus.querySelector('i, svg');
+                const iconTrade = btnTrade.querySelector('i, svg');
+                if (iconStatus) iconStatus.classList.remove('text-[#5850EC]');
+                if (iconTrade) iconTrade.classList.add('text-[#5850EC]');
+
+                mainStatus.style.display = 'none'; 
+                mainTrade.style.display = 'flex'; 
                 fetchTradeHistory(1); 
             } else {
-                document.getElementById('main-status').style.display = 'flex';
-                document.getElementById('main-trade').style.display = 'none';
-                fetchStatusHistory(1); 
+                btnStatus.className = "w-full flex items-center gap-2 bg-[#232329] text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
+                btnTrade.className = "w-full flex items-center gap-2 text-slate-400 hover:bg-[#1C1C20] hover:text-white px-3 py-2 rounded-lg text-base font-medium transition focus:outline-none";
+                
+                const iconStatus = btnStatus.querySelector('i, svg');
+                const iconTrade = btnTrade.querySelector('i, svg');
+                if (iconStatus) iconStatus.classList.add('text-[#5850EC]');
+                if (iconTrade) iconTrade.classList.remove('text-[#5850EC]');
+
+                mainStatus.style.display = 'flex'; 
+                mainTrade.style.display = 'none'; 
+                fetchStatusHistory(1);
             }
         }
 
         function openRegisterModal() {
             const modalOverlay = document.getElementById('register-modal');
             const modalContent = document.getElementById('draggable-modal');
-            const filterBox = document.getElementById('filter-box');
             
             if (modalOverlay && modalContent) {
-                modalOverlay.style.display = 'block';
-                modalContent.style.left = '50%';
-                modalContent.style.transform = 'translateX(-50%)';
-                
-                if (filterBox) {
-                    const rect = filterBox.getBoundingClientRect();
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    modalContent.style.top = (rect.bottom + scrollTop + 5) + 'px';
-                } else {
-                    modalContent.style.top = '150px'; 
-                }
+                modalOverlay.classList.remove('hidden');
+                modalContent.style.transform = 'none';
+                modalContent.style.left = 'auto';
+                modalContent.style.top = 'auto';
             }
         }
 
@@ -621,7 +786,7 @@
         }
 
         function closeModal() { 
-			document.getElementById('register-modal').style.display = 'none'; 
+			document.getElementById('register-modal').classList.add('hidden'); 
             document.querySelector('#draggable-modal h2').innerText = '예적금 내역 등록';
             document.getElementById('btn-submit-modal').innerText = '저장';
             document.getElementById('modal_trade_id').value = '';
@@ -665,7 +830,13 @@
             }
         }
 
-        window.onload = () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Lucide 아이콘 렌더링
+            lucide.createIcons();
+
+            // 로그인 사용자 연동
+            await loadUserInfo();
+
             setPlaceholderDate();
             switchView('status'); 
             
@@ -674,7 +845,17 @@
             if (modal && header) {
                 makeModalDraggable(modal, header);
             }
-        };
+        });
+
+        /**
+         * 헤더의 마지막 데이터 업데이트 시간을 현재 시각으로 갱신하는 함수
+         */
+        function updateLastUpdatedTime() {
+            const el = document.getElementById('last-updated-text');
+            if (!el) return;
+            const now = new Date();
+            el.innerText = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
     </script>
 </body>
 </html>

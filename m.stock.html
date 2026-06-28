@@ -6,17 +6,20 @@
     <title>주식관리 시스템 - 모바일 주식</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 글로벌 테마 변수 선언 (다크모드 스타일링) */
+        /* 글로벌 테마 변수 선언 (PC 버전과 동일한 다크모드 팔레트) */
         :root {
-            --vv-bg-main: #121212;
-            --vv-bg-card: #2c2c2c;
-            --vv-border: #3d3d3d;
-            --vv-text-main: rgba(255, 255, 255, 0.95);
-            --vv-text-muted: rgba(255, 255, 255, 0.65);
-            --vv-text-mint: #03dac6;
-            --point-blue: #3b82f6;
-            --point-green: #2ecc71;
-            --point-purple: #a855f7;
+            --vv-bg-main: #0E0E10;
+            --vv-bg-card: #18181C;
+            --vv-bg-input: #141416;
+            --vv-border: #232329;
+            --vv-text-main: #E4E4E7;
+            --vv-text-muted: #A1A1AA;
+            --vv-text-mint: #A1A1AA;
+            --point-blue: #5850EC;
+            --point-green: #34D399;
+            --point-red: #f87171;
+            --point-down: #60a5fa;
+            --point-purple: #5850EC;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -66,7 +69,7 @@
         
         .header-menu a:last-child { border-right: none; }
         .header-menu a.active { background-color: var(--point-blue); color: white; }
-        .header-menu a.home-btn { color: var(--vv-text-mint); }
+        .header-menu a.home-btn { color: var(--point-purple); }
 
         /* 메인 콘텐츠 영역 */
         main { 
@@ -87,12 +90,12 @@
         .status-summary-input {
             flex: 1;
             height: 40px;
-            background-color: var(--vv-bg-card);
+            background-color: var(--vv-bg-input);
             border: 1px solid var(--vv-border);
             border-radius: 6px;
             font-size: 13px;       
             font-weight: 800;       
-            color: white;
+            color: var(--vv-text-main);
             text-align: center;
             outline: none;
             cursor: default;
@@ -124,12 +127,12 @@
             flex-direction: column;
             gap: 4px; 
         }
-        .filter-item label { color: var(--vv-text-mint); font-size: 11px; font-weight: 600; }
+        .filter-item label { color: var(--vv-text-muted); font-size: 11px; font-weight: 600; }
         .filter-item input, .filter-item select { 
             width: 100%;
-            background: var(--vv-bg-main); 
+            background: var(--vv-bg-input); 
             border: 1px solid var(--vv-border); 
-            color: white; 
+            color: var(--vv-text-main); 
             padding: 8px; 
             border-radius: 6px; 
             font-size: 13px;
@@ -158,7 +161,7 @@
             background: var(--vv-bg-card);
         }
         table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th { position: sticky; top: 0; background: #333; color: var(--vv-text-mint); font-size: 12px; padding: 10px 6px; border-bottom: 2px solid var(--vv-border); text-align: center; z-index: 10; }
+        th { position: sticky; top: 0; background: var(--vv-bg-input); color: var(--vv-text-muted); font-size: 12px; padding: 10px 6px; border-bottom: 2px solid var(--vv-border); text-align: center; z-index: 10; }
         td { padding: 12px 6px; border-bottom: 1px solid var(--vv-border); font-size: 13px; text-align: center; color: var(--vv-text-main); }
         tr:hover { background-color: rgba(255,255,255,0.03); }
 		
@@ -366,7 +369,7 @@
 
             } catch (error) {
                 console.error('현황 데이터 로드 에러:', error);
-                statusBody.innerHTML = '<tr><td colspan="6" style="color:#ff4b4b">데이터 로드 실패.</td></tr>';
+                statusBody.innerHTML = '<tr><td colspan="6" style="color:#f87171">데이터 로드 실패.</td></tr>';
             }
         }
 
@@ -403,9 +406,9 @@
 
                 let profitStyle = ''; let profitSign = '';
                 if (liveProfit > 0) {
-                    profitStyle = 'color: #ff4b4b;'; profitSign = '+';
+                    profitStyle = 'color: #f87171;'; profitSign = '+';
                 } else if (liveProfit < 0) {
-                    profitStyle = 'color: #3b82f6;';
+                    profitStyle = 'color: #60a5fa;';
                 }
 
                 html += `
@@ -442,7 +445,7 @@
                 txtProfit.value = `${sign}${Math.round(totalProfitSum).toLocaleString()}원 (${sign}${profitRate.toFixed(1)}%)`; 
 
                 if (totalProfitSum > 0) {
-                    txtProfit.style.color = "#ff4b4b"; 
+                    txtProfit.style.color = "#f87171"; 
                 } else if (totalProfitSum < 0) {
                     txtProfit.style.color = "var(--point-blue)"; 
                 } else {
